@@ -1,0 +1,21 @@
+export enum ERole {
+    DOCTOR = "DOCTOR",
+    PATIENT = "PATIENT",
+    SECRETARY = "SECRETARY",
+    ADMIN = "ADMIN"
+}
+
+export enum EBillingStatus {
+    PAID = "PAID",
+    PARTIALLY_PAID = "PARTIALLY_PAID",
+    OVERDUE = "OVERDUE",
+    REFUNDED = "REFUNDED",
+    CANCELED = "CANCELED"
+}
+
+export enum EAppointmentStatus {
+    PENDING = "PENDING",
+    FULLFILLED = "FULLFILLED",
+    DONE = "DONE",
+    CANCELED = "CANCELED"
+}

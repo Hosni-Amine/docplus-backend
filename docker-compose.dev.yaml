@@ -1,0 +1,34 @@
+services:
+  mongodb:
+    container_name: mongodb-dev
+    image: mongo:latest
+    volumes:
+      - './mongo_volume:/data/db'
+    ports:
+      - '27017:27017'
+    # environment:
+    #   MONGO_INITDB_ROOT_USERNAME: doctor
+    #   MONGO_INITDB_ROOT_PASSWORD: dev
+
+
+  server:
+    container_name: doctor-sys-backend
+    build:
+      context: .
+      dockerfile: ./Dockerfile.dev
+    environment:
+      NODE_ENV: development
+    env_file:
+      - ./.env
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - 4000:4000
+    depends_on:
+      mongodb:
+        condition: service_started
+
+volumes:
+  mongo_volume:
+    driver: local
