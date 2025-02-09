@@ -2,7 +2,7 @@ import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
 import { Types } from 'mongoose';
 import { CreateUserDTO } from './user.dto';
 
-export class CreatePatientDTO extends CreateUserDTO {
+export class CreateDoctorDTO extends CreateUserDTO {
     @IsOptional()
     @IsString()
     thumbnail?: string;
@@ -12,8 +12,8 @@ export class CreatePatientDTO extends CreateUserDTO {
     doctor_id?: string;
 }
 
-export class UpdatePatientDTO extends CreatePatientDTO {
-    @IsOptional()
+export class UpdateDoctorDTO extends CreateDoctorDTO {
+    /* @IsOptional()
     medical_information?: Types.ObjectId;
 
     @IsOptional()
@@ -23,5 +23,5 @@ export class UpdatePatientDTO extends CreatePatientDTO {
     appointments?: Types.ObjectId[];
 
     @IsOptional()
-    medical_histories?: Types.ObjectId[];
+    medical_histories?: Types.ObjectId[]; */
 }

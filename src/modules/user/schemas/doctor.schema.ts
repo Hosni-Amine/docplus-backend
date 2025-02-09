@@ -5,11 +5,12 @@ import { Secretary, Billing, Appointment, User } from "@src/schemas";
 
 @Schema({ versionKey: false })
 export class Doctor extends AbstractDocument {
+
+    @Prop()
+    thumbnail?: string;
+
     @Prop()
     speciality: string;
-
-    @Prop({ unique: true, type: Types.ObjectId, ref: 'User' })
-    user: User;
 
     @Prop()
     location_address?: string;
@@ -29,8 +30,8 @@ export class Doctor extends AbstractDocument {
     @Prop([{ type: [Types.ObjectId], ref: 'Secretary' }])
     secretaries: Secretary[];
 
-    @Prop()
-    thumbnail?: string;
+    @Prop({ unique: true, type: Types.ObjectId, ref: 'User' })
+    user: User;
 }
 
 

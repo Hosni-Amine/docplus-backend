@@ -6,18 +6,19 @@ import { Secretary, Doctor } from "@src/schemas";
 @Schema({ versionKey: false })
 export class User extends AbstractDocument {
     @Prop() 
-    email: string;
+    email?: string;
 
     @Prop()
-    password: string;
+    password?: string;
 
     @Prop({ default: '00-000-000' })
-    phone_number: string;
+    phone_number?: string;
 
     @Prop()
-    username: string;
+    username?: string;
 
     @Prop()
+
     fullname?: string;
 
     @Prop({ enum: ["DOCTOR", "PATIENT", "SECRETARY", "ADMIN"], type: String })
