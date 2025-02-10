@@ -1,17 +1,15 @@
 import { ConfirmReqDTO, ConfirmResDTO, SigninReqDTO, SigninResDTO, SignupReqDTO, SignupResDTO } from '@app/common';
-import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as argon from 'argon2';
 import { UserRepository } from '../user/user.repository';
 import { v4 as uuidv4 } from 'uuid';
-import { Doctor, Patient, Secretary } from '@src/schemas';
-import { Model } from 'mongoose';
-import { InjectModel } from '@nestjs/mongoose';
 import { MailingService } from '@src/modules/mailing/mailing.service';
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     private readonly userRepository: UserRepository,
     private readonly mailingService: MailingService,
@@ -24,7 +22,7 @@ export class AuthService {
       const current_user = await this.userRepository.findOne({ email: body.login })
 
       if (!current_user) {
-        console.log('Bad Credentials');
+        this.logger.error('Bad Credentials');
         return {
           user: null,
           token: null,
@@ -34,7 +32,7 @@ export class AuthService {
       }
       const pwd_matches = await argon.verify(current_user.password, body.password)
       if (!pwd_matches) {
-        console.log('Bad Credentials');
+        this.logger.error('Bad Credentials');
         return {
           user: null,
           token: null,
@@ -49,7 +47,6 @@ export class AuthService {
         id: current_user._id, 
         role: current_user.role,
         fullname: current_user.fullname,
-        username: current_user.username,
         email: current_user.email,
       };
 
@@ -65,7 +62,7 @@ export class AuthService {
         status: 200
       }
     } catch (error) {
-      console.log('Error during sign in:', error);
+      this.logger.error('Error during sign in:', error);
       return {
         user: null,
         token: null,
@@ -80,19 +77,10 @@ export class AuthService {
     try {
       const current_user = await this.userRepository.findOne({ email: body.email });
       if (current_user) {
-        console.log(`This mail address ${body.email} is already existed!`);
+        this.logger.error(`This mail address ${body.email} is already existed!`);
         return {
           user: null,
           message: `This mail address ${body.email} is already existed!`,
-          status: 400
-        }
-      }
-      const userByUsername = await this.userRepository.findOne({ username: body.username });
-      if (userByUsername) {
-        console.log(`This username ${body.username} is already existed!`);
-        return {
-          user: null,
-          message: `This username ${body.username} is already existed!`,
           status: 400
         }
       }
@@ -103,7 +91,6 @@ export class AuthService {
       const saved_user = await this.userRepository.create({
         email: body.email,
         password: hashPassword,
-        username: body.username,
         phone_number: body.phoneNumber,
         role: body.role,
         fullname: body.fullname,
@@ -112,7 +99,7 @@ export class AuthService {
         is_completed: false
       })
 
-      await this.mailingService.sendUserConfirmation(saved_user.email, saved_user.username, saved_user.confirmation_token);
+      await this.mailingService.sendUserConfirmation(saved_user.email, saved_user.fullname, saved_user.confirmation_token);
       await session.commitTransaction();
 
       delete saved_user.password;
@@ -125,7 +112,7 @@ export class AuthService {
       }
     } catch (error) {
       await session.abortTransaction();
-      console.log(error);
+      this.logger.error(error);
       return {
         user: null,
         message: 'Error registering user!',
@@ -140,7 +127,7 @@ export class AuthService {
       const current_user = await this.userRepository.findOne({ confirmation_token: body.token });
 
       if (!current_user) {
-        console.log(`This confirmation token ${body.token} doesn't exist!`);
+        this.logger.error(`This confirmation token ${body.token} doesn't exist!`);
         return {
           user: null,
           message: `This confirmation token ${body.token} doesn't exist!`,
@@ -149,7 +136,7 @@ export class AuthService {
       }
 
       if (current_user.is_verified) {
-        console.log(`This user ${current_user.email} is already verified!`);
+        this.logger.error(`This user ${current_user.email} is already verified!`);
         return {
           user: null,
           message: `This user ${current_user.email} is already verified!`,
@@ -174,7 +161,7 @@ export class AuthService {
       }
     } catch (error) {
       await session.abortTransaction();
-      console.log(error);
+      this.logger.error(error);
       return {
         user: null,
         message: 'Error confirming user!',

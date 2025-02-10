@@ -1,23 +1,26 @@
 import { Controller, Get, Body, Patch, Param, Delete, UseGuards, Res, Post } from '@nestjs/common';
 import { UserService } from './user.service';
-import { AuthGuard } from '@src/guards';
+import { AuthGuard, RolesGuard } from '@src/guards';
 import { CurrentUser } from '@src/decorators';
 import { User } from '@src/schemas';
-import { GetMeResDTO, GetUserResDTO } from '@app/common';
+import { ERole, GetMeResDTO, GetUserResDTO } from '@app/common';
 import { CreatePatientDTO } from './dto/patient.dto';
+import { CreateDoctorDTO } from './dto/doctor.dto';
+import { CreateSecretaryDTO } from './dto/secretary.dto';
+import { Roles } from '@src/decorators/roles.decorator';
+
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
   @UseGuards(AuthGuard)
-
   @Get('me')
   async findMe(@CurrentUser() user: User) : Promise<GetMeResDTO> {
     if(user)
     {
       return {
-        message: 'User founded successfully!',
+        message: 'User found successfully!',
         status: 200,
         user
       };
@@ -33,10 +36,34 @@ export class UserController {
 
   }
 
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.SECRETARY, ERole.DOCTOR)
   @Post('patient')
   async createPatient(@Body() createPatientDto: CreatePatientDTO) : Promise<GetUserResDTO> {
-      return await this.userService.createPatient(createPatientDto);
+    const patientData = {
+      ...createPatientDto,
+      role: ERole.PATIENT
+    };
+    return await this.userService.createPatient(patientData);
   }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN)
+  @Post('doctor')
+  async createDoctor(@Body() createDoctorDto: CreateDoctorDTO) : Promise<GetUserResDTO> {
+      return await this.userService.createDoctor(createDoctorDto);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.DOCTOR)
+  @Post('secretary')
+  async createSecretary(@Body() createSecretaryDto: CreateSecretaryDTO) : Promise<GetUserResDTO> {
+      return await this.userService.createSecretary(createSecretaryDto);
+  }
+
+
+
+
 
   /* @UseGuards(AuthGuard)
   @Get(':id')
@@ -44,7 +71,7 @@ export class UserController {
     try {
       const user = await this.userService.findOne(id);
       return response.status(200).send({
-        message: 'User founded successfully!',
+        message: 'User found successfully!',
         status: 200,
         user
       });

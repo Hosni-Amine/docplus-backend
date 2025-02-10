@@ -1,23 +1,15 @@
 import { IsString, IsOptional } from 'class-validator';
 import { CreateUserDTO } from './user.dto';
 
-//http://localhost:4000/api/user/doctor
+//http://localhost:4000/api/user/secretary
 
-export class CreateDoctorDTO extends CreateUserDTO {
+export class CreateSecretaryDTO extends CreateUserDTO {
     @IsOptional()
     @IsString()
-    speciality: string;
-
-    @IsOptional()
-    @IsString()
-    location_address?: string;
-    
-    @IsOptional()
-    @IsString()
-    bio?: string;
+    doctor_id: string;
 }
 
-export class UpdateDoctorDTO extends CreateDoctorDTO {
+export class UpdateSecretaryDTO extends CreateSecretaryDTO {
     /* @IsOptional()
     medical_information?: Types.ObjectId;
 

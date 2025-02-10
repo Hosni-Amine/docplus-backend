@@ -9,7 +9,7 @@ export class MailingService {
         private readonly configService: ConfigService
     ) { }
 
-    async sendUserConfirmation(email: string, username: string, token: string): Promise<void> {
+    async sendUserConfirmation(email: string, fullname: string, token: string): Promise<void> {
         /* const url = `${this.configService.get('FRONTEND_URL')}/auth/confirm/${token}`;
         try {
             await this.mailerService.sendMail({
@@ -17,7 +17,7 @@ export class MailingService {
                 subject: 'Welcome! Confirm Your Email',
                 template: 'confirmation',
                 context: {
-                    username,
+                    fullname,
                     url
                 }
             });

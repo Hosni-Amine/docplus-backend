@@ -5,6 +5,8 @@ import { Request } from 'express';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from '@src/schemas';
 import { Model } from 'mongoose';
+import { Reflector } from '@nestjs/core';
+import { ERole } from '@app/common';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -14,6 +16,7 @@ export class AuthGuard implements CanActivate {
     private jwtService: JwtService,
     private config: ConfigService,
     @InjectModel(User.name) private readonly userModel: Model<User>,
+    private reflector: Reflector
   ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -28,18 +31,7 @@ export class AuthGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: this.config.getOrThrow('JWT_SECRET')
       });
-      console.log(payload);
       request.user = payload;
-      /* switch ((await this.userModel.findOne({ _id: payload.id })).role) {
-        case 'DOCTOR':
-          current_user = await current_user.populate('Doctor').exec()
-        case 'SECRETARY':
-          current_user = await current_user.populate('Secretary').exec()
-        case 'PATIENT':
-          current_user = await current_user.populate('Patient').exec()
-        default:
-          current_user = await current_user;
-      } */     
     } catch (err) {
       this.logger.error(err.message);
       return false;
@@ -51,4 +43,22 @@ export class AuthGuard implements CanActivate {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
   };
+}
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRoles = this.reflector.getAllAndOverride<ERole[]>('roles', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (!requiredRoles) {
+      return true;
+    }
+
+    const { user } = context.switchToHttp().getRequest();
+    return requiredRoles.includes(user.role);
+  }
 }

@@ -27,9 +27,6 @@ export class SignupReqDTO {
     phoneNumber: string;
 
     @IsOptional()
-    username: string;
-
-    @IsOptional()
     fullname?: string;
 
     @IsNotEmpty()

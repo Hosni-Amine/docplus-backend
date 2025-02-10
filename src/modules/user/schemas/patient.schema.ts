@@ -1,16 +1,27 @@
-import { AbstractDocument } from "@app/common";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
-import { MedicalHistory, User, Appointment, Billing, MedicalInformation } from "@src/schemas";
+import { MedicalHistory, User, Appointment, Billing, Doctor } from "@src/schemas";
 
-@Schema({ versionKey: false })
-export class Patient extends AbstractDocument {
+@Schema({ versionKey: false , timestamps: true })
+export class Patient extends User {
 
     @Prop()
-    thumbnail?: string;
-
-    @Prop({ type: Types.ObjectId, ref: 'MedicalInformation' })
-    medical_information?: MedicalInformation;
+    insurance_provider?: string;
+  
+    @Prop()
+    insurance_policy_num?: string;
+  
+    @Prop([{ type: String }])
+    allergies: string[];
+  
+    @Prop([{ type: String }])
+    current_medication: string[];
+  
+    @Prop()
+    family_medical_history?: string;
+  
+    @Prop()
+    past_medical_history?: string;
 
     @Prop({ type: [Types.ObjectId], ref: 'Billing' })
     billings?: Billing[];
@@ -21,8 +32,9 @@ export class Patient extends AbstractDocument {
     @Prop({ type: [Types.ObjectId], ref: 'MedicalHistory' })
     medical_histories?: MedicalHistory[]
 
-    @Prop({ unique: true, type: Types.ObjectId, ref: 'Doctor' })
-    doctor: User;
+    @Prop({ type: Types.ObjectId, ref: 'Doctor', required: true })
+    doctor: Doctor;
 }
 
 export const PatientSchema = SchemaFactory.createForClass(Patient);
+PatientSchema.set('discriminatorKey', 'role');

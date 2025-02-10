@@ -1,4 +1,4 @@
-import { User } from "@src/schemas";
+import { Doctor, Patient, Secretary, User } from "@src/schemas";
 
 interface IBaseRes {
   message?: string;
@@ -27,5 +27,5 @@ export  interface GetMeResDTO extends IBaseRes {
   user: User;
 }
 export  interface GetUserResDTO extends IBaseRes {
-  user: User;
+  user: User | Doctor | Secretary | Patient;
 }
