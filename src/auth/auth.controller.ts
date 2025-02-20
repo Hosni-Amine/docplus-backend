@@ -1,10 +1,4 @@
-import {
-  Body,
-  Controller,
-  Patch,
-  Post,
-  Res,
-} from '@nestjs/common';
+import {Body,Controller,Patch,Post,Res} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
 import { SigninReqDTO, SigninResDTO, SignupReqDTO, ConfirmReqDTO } from '@app/common';
@@ -23,9 +17,10 @@ export class AuthController {
     });
   }
 
-  @Post('/signup')
-  async signUp(@Body() body: SignupReqDTO, @Res() response: Response) {
-    const res = await this.authService.signUp(body);
+  @Patch('/reset-password')
+  async resetPassword(@Body() body: ConfirmReqDTO, @Res() response: Response) {
+    const res = await this.authService.resetPassword(body);
+    //NB ; THJIS SHOULD BE LIKE THAT TO SECURE THE STATUS OF THE RESPONSE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     return response.status(res.status).send({
       ...res
     })
@@ -37,6 +32,13 @@ export class AuthController {
       return response.status(res.status).send({
         ...res
       });
-    
   }
+
+    /* @Post('/signup')
+  async signUp(@Body() body: SignupReqDTO, @Res() response: Response) {
+    const res = await this.authService.signUp(body);
+    return response.status(res.status).send({
+      ...res
+    })
+  } */
 }

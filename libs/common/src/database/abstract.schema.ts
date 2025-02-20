@@ -9,10 +9,10 @@ import { SchemaTypes, Types } from "mongoose";
 })
 export class AbstractDocument {
 
-    @Prop({ type: SchemaTypes.ObjectId })
+    @Prop({ type: SchemaTypes.ObjectId, default: () => new Types.ObjectId() })
     _id: Types.ObjectId;
 
-    @Prop({ Type: Boolean, default: false })
+    @Prop({ type: Boolean, default: false })
     isDeleted?: boolean;
 
     @Prop({ type: Date })

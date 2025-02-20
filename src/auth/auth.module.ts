@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { DatabaseModule } from '@app/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from '@schemas';
-import { UserRepository } from '../user/user.repository';
-import { MailingService } from '@src/modules/mailing/mailing.service';
+import { User, UserSchema } from '@src/user/schemas/user.schema';
+import { UserRepository } from '@src/user/user.repository';
+import { MailingService } from '@src/mailing/mailing.service';
+import { DatabaseModule } from '@app/common/database/database.module';
 @Module({
   imports: [
     DatabaseModule,

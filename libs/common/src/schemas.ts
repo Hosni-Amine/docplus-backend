@@ -10,7 +10,7 @@ interface IBase {
 export interface IUser extends IBase {
     email: string;
     password: string;
-    phone_number: string;
+    phone: string;
     fullname?: string;
     role: ERole;
     doctor_id?: string;

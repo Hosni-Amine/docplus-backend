@@ -1,15 +1,18 @@
 import { AbstractDocument, EAppointmentStatus } from "@app/common";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
-import { Patient, Doctor } from "@src/schemas";
+import { User } from "@src/user/schemas/user.schema";
 
 @Schema({ versionKey: false })
 export class Appointment extends AbstractDocument {
-    @Prop({ type: Types.ObjectId, ref: 'Patient' })
-    patient: Patient;
+    @Prop({ type: Types.ObjectId, ref: 'User' })
+    patient: User;
 
-    @Prop({ type: Types.ObjectId, ref: 'Doctor' })
-    doctor: Doctor;
+    @Prop({ type: Types.ObjectId, ref: 'User' })
+    createdBy: User;
+
+    @Prop({ type: Types.ObjectId, ref: 'User' })
+    doctor: User;
 
     @Prop()
     date: Date;

@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { InjectModel } from '@nestjs/mongoose';
-import { User } from '@src/schemas';
+import { User } from '@src/user/schemas/user.schema';
 import { Model } from 'mongoose';
 import { Reflector } from '@nestjs/core';
 import { ERole } from '@app/common';
