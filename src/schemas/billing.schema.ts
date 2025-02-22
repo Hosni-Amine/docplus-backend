@@ -1,15 +1,15 @@
 import { AbstractDocument, EBillingStatus } from "@app/common";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
-import { Doctor, Patient } from "@src/schemas";
+import { User } from "@src/schemas";
 
 @Schema({ versionKey: false })
 export class Billing extends AbstractDocument {
-    @Prop({ type: Types.ObjectId, ref: 'Doctor' })
-    doctor: Doctor;
+    @Prop({ type: Types.ObjectId, ref: 'User' })
+    doctor: User;
 
-    @Prop({ type: Types.ObjectId, ref: 'Patient' })
-    patient: Patient;
+    @Prop({ type: Types.ObjectId, ref: 'User' })
+    patient: User;
 
     @Prop({ default: 0 })
     ammount: number;

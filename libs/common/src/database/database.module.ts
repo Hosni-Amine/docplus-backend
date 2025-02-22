@@ -5,11 +5,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 @Module({
     imports: [
         MongooseModule.forRootAsync({
-            useFactory: (config: ConfigService) => ({
-                uri: config.getOrThrow('MONGO_URI')
-            }),
             inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                uri: config.get('MONGO_URI'),
+                autoCreate: true,
+                dbName: 'docPlus',
+            }),
         })
-    ]
+    ],
 })
 export class DatabaseModule { }
+    
