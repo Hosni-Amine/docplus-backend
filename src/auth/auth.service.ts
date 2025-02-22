@@ -103,12 +103,15 @@ export class AuthService {
         }
       }
 
+      const hashedPassword = await argon.hash(body.password);
+
       const verified_user = await this.userRepository.findOneAndUpdate(
         { confirmation_token: body.token },
         {
           $set: {
             is_verified: true,
-            password: body.password
+            password: hashedPassword,
+            confirmation_token: null
           }
         }
       )

@@ -34,7 +34,7 @@ export class AuthController {
       });
   }
 
-  @Get('/request-reset-password')
+  @Post('/request-reset-password')
   async requestResetPassword(@Body() body: RequestResetPasswordReqDTO, @Res() response: Response) {
       const res = await this.authService.requestResetPassword(body.email);
       return response.status(res.status).send({
