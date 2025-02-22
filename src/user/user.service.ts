@@ -30,6 +30,7 @@ export class UserService {
           }
         }
       }
+      const expirationHours = 24;
       /* for test */
       /* const hashPassword = await argon.hash(createUserDto.password) */
       const confirmationToken = uuidv4();
@@ -38,11 +39,12 @@ export class UserService {
         is_verified: false,
         is_completed: false,
         confirmation_token: confirmationToken,
+        confirmation_token_validity: new Date(Date.now() + 1000 * 60 * 60 * expirationHours),
         /* password: hashPassword */
       });
 
       if(newUser.email){
-        await this.mailingService.sendUserConfirmation(newUser.email, newUser.fullname, newUser.confirmation_token);
+        await this.mailingService.sendUserConfirmation(newUser.email, newUser.fullname, newUser.confirmation_token,expirationHours);
       }
       
       return {
@@ -62,13 +64,14 @@ export class UserService {
   }
 
   async unverifyUser(id: string): Promise<GetUserResDTO> {
-    const unverifiedUser = await this.userModel.findByIdAndUpdate(id, { is_verified: false }, { new: true });
+    await this.userModel.findByIdAndUpdate(id, { is_verified: false }, { new: true });
     return {
-      user: unverifiedUser,
+      user: null,
       status: 200,
       message: 'User unverified successfully'
     }
   }
+
   async updateUser(
     updateUserDto: Partial<UpdateUserDTO>,
   ): Promise<GetUserResDTO> {

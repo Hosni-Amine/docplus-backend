@@ -8,21 +8,6 @@ const customHandlebars = Handlebars.create();
 export enum MailTemplate {
     Confirmation = 'confirmation.hbs',
     ResetPassword = 'reset-password.hbs',
-/*     
-    ResetPasswordConfirmed = 'reset-password-confirmed.hbs',
-    NewUser = 'new-user.hbs',
-    NewTicket = 'new-ticket.hbs',
-    NewTicketAffected = 'new-ticket-affected.hbs',
-    NoClosedReminder = 'no-closed-reminder.hbs',
-    NoClosedReminderAdmin = 'no-closed-reminder-admin.hbs',
-    ExpertiseReminder = 'expertise-reminder.hbs',
-    TicketClosed = 'ticket-closed.hbs',
-    TicketsImported = 'tickets-imported.hbs',
-    ExpertiseReminderAdmin = 'expertise-reminder-admin.hbs',
-    ExpertiseReport = 'expertise-report.hbs',
-    TicketsReport = 'tickets-report.hbs',
-    Notification = 'notification.hbs',
-    TicketTest = 'ticket-test.hbs', */
   }
 
 
@@ -75,14 +60,6 @@ export class MailingService {
             })(
               {
                 ...context,
-                /* today: new Date(),
-                lockImage:
-                  this.configService.get('BASE_URL_BACK') +
-                  'public-assets/images/image-1.png',
-                logoUrl: this.configService.get('BASE_URL_FRONT') + 'fp-logo/logo.png',
-                naLogo:
-                  this.configService.get('BASE_URL_BACK') +
-                  'public-assets/images/na-logo-white.png', */
               },
               { allowProtoPropertiesByDefault: true },
             );
@@ -102,7 +79,7 @@ export class MailingService {
               '\nList of recipients: ' +
               recipients,
           );
-          if(this.configService.get('NODE_ENV') !== 'developement') {
+          if(this.configService.get('NODE_ENV') !== 'development') {
           await this.transporter.sendMail({
             ...mailOptions,
             from: mailOptions.from
@@ -122,18 +99,16 @@ export class MailingService {
         }
       }
 
-    async sendUserConfirmation(email: string, fullname: string, token: string): Promise<void> {
+    async sendUserConfirmation(email: string, fullname: string, token: string, expirationHours: number): Promise<void> {
         try {
             this.sendMail({
                 templatePath: MailTemplate.Confirmation,
                 context: {
                   fullname,
+                  expirationHours,
                   url:
                     this.configService.get<string>('FRONTEND_URL') +
-                    'confirm/' + 
-                    token +
-                    '?email=' +
-                    email,
+                    'confirm/' + '?token=' +token,
                 },
                 to: email,
                 subject: "Votre compte a été créer et vous devez l'activer",
@@ -144,18 +119,16 @@ export class MailingService {
         }
     }
 
-    async sendUserResetPassword(email: string, fullname: string, token: string): Promise<boolean> {
+    async sendUserResetPassword(email: string, fullname: string, token: string,expirationHours:number): Promise<boolean> {
       try {
           this.sendMail({
               templatePath: MailTemplate.ResetPassword,
               context: {
+                expirationHours,
                 fullname,
                 url:
                   this.configService.get<string>('FRONTEND_URL') +
-                  'confirm/' + 
-                  token +
-                  '?email=' +
-                  email,
+                  'reset-password/?token=' + token,
               },
               to: email,
               subject: "Réinitialiser votre mot de passe",

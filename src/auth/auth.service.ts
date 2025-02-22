@@ -136,8 +136,12 @@ export class AuthService {
 
   async resetPassword(body: ConfirmReqDTO): Promise<ConfirmResDTO> {
     const session = await this.userRepository.startTransaction();
+    const now = new Date();
     try {
-      const current_user = await this.userRepository.findOne({ confirmation_token: body.token });
+      const current_user = await this.userRepository.findOne({ 
+        confirmation_token: body.token, 
+        confirmation_token_validity: { $gte: now } 
+      });
 
       if (!current_user) {
         this.logger.error(`This confirmation token ${body.token} doesn't exist!`);
@@ -192,7 +196,8 @@ export class AuthService {
           status: 400
         }
       }
-      const is_sent = await this.mailingService.sendUserResetPassword(current_user.email, current_user.fullname, current_user.confirmation_token);
+      const expirationHours = 12;
+      const is_sent = await this.mailingService.sendUserResetPassword(current_user.email, current_user.fullname, current_user.confirmation_token,expirationHours);
       if (!is_sent) {
         this.logger.error(`Error sending reset password email to ${current_user.email}!`);
         return {
@@ -201,6 +206,14 @@ export class AuthService {
           status: 500
         }
       }
+      await this.userRepository.findOneAndUpdate(
+        { email: email },
+        {
+          $set: {
+            confirmation_token_validity: new Date(Date.now() + 1000 * 60 * 60 * expirationHours)
+          }
+        }
+      )
       return {
         user: null,
         message: "Password reset request sent successfully!",
