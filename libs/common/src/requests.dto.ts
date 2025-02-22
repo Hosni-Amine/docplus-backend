@@ -39,3 +39,9 @@ export class ConfirmReqDTO {
     @Length(6, 50)
     password: string;
 }
+
+export class RequestResetPasswordReqDTO {
+    @IsNotEmpty()
+    @IsEmail()
+    email: string;
+}

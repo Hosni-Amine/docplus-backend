@@ -19,8 +19,6 @@ export class UserController {
   @UseGuards(AuthGuard)
   @Get('me')
   async findMe(@CurrentUser() user: User) : Promise<GetUserResDTO> {
-    this.mailingService.sendUserResetPassword('amine.hosni02@gmail.com', 'amine hosni', '1234567890')
-    this.mailingService.sendUserConfirmation('amine.hosni02@gmail.com', 'amine hosni', '1234567890')
     if(user)
     {
       return {

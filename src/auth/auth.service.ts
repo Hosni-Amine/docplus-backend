@@ -3,13 +3,15 @@ import { JwtService } from '@nestjs/jwt';
 import * as argon from 'argon2';
 import { UserRepository } from '@src/user/user.repository';
 import { Injectable, Logger } from '@nestjs/common';
+import { MailingService } from '@src/mailing/mailing.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   constructor(
     private readonly userRepository: UserRepository,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly mailingService: MailingService
   ) { }
 
   async signIn(body: SigninReqDTO): Promise<SigninResDTO> {
@@ -172,6 +174,43 @@ export class AuthService {
       return {
         user: null,
         message: 'Error resetting password!',
+        status: 500
+      }
+    }
+  }
+
+  async requestResetPassword(email: string): Promise<ConfirmResDTO> {
+    try {
+      const current_user = await this.userRepository.findOne({ email: email });
+      console.log(current_user)
+      console.log(email)
+      if (!current_user) {
+        this.logger.error(`This email ${email} doesn't exist!`);
+        return {
+          user: null, 
+          message: `This email ${email} doesn't exist!`,
+          status: 400
+        }
+      }
+      const is_sent = await this.mailingService.sendUserResetPassword(current_user.email, current_user.fullname, current_user.confirmation_token);
+      if (!is_sent) {
+        this.logger.error(`Error sending reset password email to ${current_user.email}!`);
+        return {
+          user: null,
+          message: `Error sending reset password email to ${current_user.email}!`,
+          status: 500
+        }
+      }
+      return {
+        user: null,
+        message: "Password reset request sent successfully!",
+        status: 200
+      }
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        user: null,
+        message: 'Error sending reset password email!',
         status: 500
       }
     }

@@ -144,7 +144,7 @@ export class MailingService {
         }
     }
 
-    async sendUserResetPassword(email: string, fullname: string, token: string): Promise<void> {
+    async sendUserResetPassword(email: string, fullname: string, token: string): Promise<boolean> {
       try {
           this.sendMail({
               templatePath: MailTemplate.ResetPassword,
@@ -161,8 +161,10 @@ export class MailingService {
               subject: "Réinitialiser votre mot de passe",
             });
           this.logger.log('Reset password email sent successfully to: '+email);
+          return true;
       } catch (error) {
           this.logger.error('Failed to send reset password email:', error);
+          return false;
       }
   }
 }

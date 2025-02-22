@@ -1,7 +1,7 @@
-import {Body,Controller,Patch,Post,Res} from '@nestjs/common';
+import {Body,Controller,Get,Patch,Post,Res} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
-import { SigninReqDTO, SigninResDTO, SignupReqDTO, ConfirmReqDTO } from '@app/common';
+import { SigninReqDTO, SigninResDTO, ConfirmReqDTO, RequestResetPasswordReqDTO } from '@app/common';
 
 @Controller('auth')
 export class AuthController {
@@ -29,6 +29,14 @@ export class AuthController {
   @Patch('/confirm')
   async confirmUser(@Body() body: ConfirmReqDTO, @Res() response: Response) {
       const res = await this.authService.confirmUser(body);
+      return response.status(res.status).send({
+        ...res
+      });
+  }
+
+  @Get('/request-reset-password')
+  async requestResetPassword(@Body() body: RequestResetPasswordReqDTO, @Res() response: Response) {
+      const res = await this.authService.requestResetPassword(body.email);
       return response.status(res.status).send({
         ...res
       });
