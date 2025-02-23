@@ -14,9 +14,15 @@ async function bootstrap() {
   // Updated CORS configuration
   app.enableCors({
     origin: [configService.get('FRONTEND_URL_PROD'),configService.get('FRONTEND_URL')],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+    ],
   });
 
   app.useGlobalPipes(
