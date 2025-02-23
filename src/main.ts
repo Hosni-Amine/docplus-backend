@@ -13,7 +13,7 @@ async function bootstrap() {
   
   // Updated CORS configuration
   app.enableCors({
-    origin: ['http://localhost:3000'], // Specify your frontend URL
+    origin: [configService.get('FRONTEND_URL_PROD'),configService.get('FRONTEND_URL')],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -25,7 +25,12 @@ async function bootstrap() {
     }),
   );
   
-  await app.listen(configService.getOrThrow('PORT'));
-  console.log(`Server is running on port ${+process.env.PORT || 4000}`);
+  const port = configService.get('PORT') || 4000;
+  await app.listen(port, '0.0.0.0');
+  
+  console.log(`
+    🚀 Server running
+    📝 Environment: ${process.env.NODE_ENV || 'development'}
+  `);
 }
 bootstrap();
