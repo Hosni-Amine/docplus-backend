@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
 import { GetUserResDTO } from '@app/common/responses.dto';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,7 +30,6 @@ export class UserService {
           }
         }
       }
-      const expirationHours = 24;
       /* for test */
       /* const hashPassword = await argon.hash(createUserDto.password) */
       const confirmationToken = uuidv4();
@@ -39,12 +38,11 @@ export class UserService {
         is_verified: false,
         is_completed: false,
         confirmation_token: confirmationToken,
-        confirmation_token_validity: new Date(Date.now() + 1000 * 60 * 60 * expirationHours),
         /* password: hashPassword */
       });
 
       if(newUser.email){
-        await this.mailingService.sendUserConfirmation(newUser.email, newUser.fullname, newUser.confirmation_token,expirationHours);
+        await this.mailingService.sendUserConfirmation(newUser.email, newUser.fullname, newUser.confirmation_token);
       }
       
       return {
@@ -96,10 +94,11 @@ export class UserService {
         const imagePath = await handleFileUpload(photo, 'patients');
         rest['photo'] = imagePath;
       }
-
       const updatedUser = await this.userModel.findByIdAndUpdate(
-        id,
-        rest,
+        {_id : id},
+        {
+          ...rest,
+        },
         { new: true }
       );
 

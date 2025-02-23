@@ -32,6 +32,7 @@ export class AppController {
     })(
       {
         fullname: 'amine',
+        expirationHours:'12',
         url:
           'https://www.google.com' +
           'confirm/' + 

@@ -4,6 +4,7 @@ import * as argon from 'argon2';
 import { UserRepository } from '@src/user/user.repository';
 import { Injectable, Logger } from '@nestjs/common';
 import { MailingService } from '@src/mailing/mailing.service';
+import { v4 as uuidv4 } from 'uuid';  
 
 @Injectable()
 export class AuthService {
@@ -111,7 +112,8 @@ export class AuthService {
           $set: {
             is_verified: true,
             password: hashedPassword,
-            confirmation_token: null
+            confirmation_token: null,
+            confirmation_token_validity: null
           }
         }
       )
@@ -160,6 +162,8 @@ export class AuthService {
         { confirmation_token: body.token },
         {
           $set: {
+            confirmation_token: null,
+            confirmation_token_validity: null,
             password: hashPassword
           }
         }
@@ -189,8 +193,6 @@ export class AuthService {
   async requestResetPassword(email: string): Promise<ConfirmResDTO> {
     try {
       const current_user = await this.userRepository.findOne({ email: email });
-      console.log(current_user)
-      console.log(email)
       if (!current_user) {
         this.logger.error(`This email ${email} doesn't exist!`);
         return {
@@ -209,10 +211,12 @@ export class AuthService {
           status: 500
         }
       }
+      const confirmationToken = uuidv4();
       await this.userRepository.findOneAndUpdate(
         { email: email },
         {
           $set: {
+            confirmation_token: confirmationToken,
             confirmation_token_validity: new Date(Date.now() + 1000 * 60 * 60 * expirationHours)
           }
         }

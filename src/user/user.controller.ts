@@ -50,6 +50,7 @@ export class UserController {
 
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(ERole.ADMIN,ERole.DOCTOR,ERole.SECRETARY)
+  @Patch()
   async updateUser(
     @Body() updateUserDto: UpdateUserDTO,
     @Res() response : Response

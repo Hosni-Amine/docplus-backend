@@ -31,14 +31,13 @@ export class CreateUserDTO {
     @IsString()
     address?: string;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
     role?: ERole;
 }
 
 export class UpdateUserDTO extends CreateUserDTO {
     @IsNotEmpty()
-    @IsString()
     @Transform(({ value }) => new Types.ObjectId(value))
     id: string;
 }

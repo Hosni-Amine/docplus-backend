@@ -99,13 +99,12 @@ export class MailingService {
         }
       }
 
-    async sendUserConfirmation(email: string, fullname: string, token: string, expirationHours: number): Promise<void> {
+    async sendUserConfirmation(email: string, fullname: string, token: string): Promise<void> {
         try {
             this.sendMail({
                 templatePath: MailTemplate.Confirmation,
                 context: {
                   fullname,
-                  expirationHours,
                   url:
                     this.configService.get<string>('FRONTEND_URL') +
                     'confirm/' + '?token=' +token,
