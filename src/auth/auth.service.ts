@@ -85,7 +85,7 @@ export class AuthService {
     const session = await this.userRepository.startTransaction();
     try {
       const current_user = await this.userRepository.findOne({ confirmation_token: body.token });
-
+      console.log(current_user)
       if (!current_user) {
         this.logger.error(`This confirmation token ${body.token} doesn't exist!`);
         return {

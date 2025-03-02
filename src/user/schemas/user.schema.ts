@@ -31,8 +31,8 @@ export class User extends AbstractDocument {
     @Prop({ default: false })
     is_completed: boolean;
 
-    @Prop({ unique: true })
-    confirmation_token: string;
+    @Prop({ nullable : true })
+    confirmation_token?: string;
 
     @Prop({ unique: true })
     confirmation_token_validity?: Date;

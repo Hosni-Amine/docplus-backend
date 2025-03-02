@@ -79,7 +79,8 @@ export class MailingService {
               '\nList of recipients: ' +
               recipients,
           );
-          if(this.configService.get('NODE_ENV') !== 'development') {
+/*           if(this.configService.get('NODE_ENV') !== 'development') {
+ */            if(true) {
           await this.transporter.sendMail({
             ...mailOptions,
             from: mailOptions.from
@@ -107,7 +108,7 @@ export class MailingService {
                   fullname,
                   url:
                     this.configService.get<string>('FRONTEND_URL') +
-                    'confirm/' + '?token=' +token,
+                    '/confirm/' + '?token=' +token,
                 },
                 to: email,
                 subject: "Votre compte a été créer et vous devez l'activer",
@@ -127,7 +128,7 @@ export class MailingService {
                 fullname,
                 url:
                   this.configService.get<string>('FRONTEND_URL') +
-                  'reset-password/?token=' + token,
+                  '/reset-password/' + '?token=' + token,
               },
               to: email,
               subject: "Réinitialiser votre mot de passe",

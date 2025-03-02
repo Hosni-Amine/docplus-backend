@@ -28,6 +28,7 @@ export class AuthController {
 
   @Patch('/confirm')
   async confirmUser(@Body() body: ConfirmReqDTO, @Res() response: Response) {
+    console.log(body)
       const res = await this.authService.confirmUser(body);
       return response.status(res.status).send({
         ...res
@@ -36,6 +37,7 @@ export class AuthController {
 
   @Post('/request-reset-password')
   async requestResetPassword(@Body() body: RequestResetPasswordReqDTO, @Res() response: Response) {
+    console.log(body);
       const res = await this.authService.requestResetPassword(body.email);
       return response.status(res.status).send({
         ...res
