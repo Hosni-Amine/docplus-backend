@@ -1,21 +1,26 @@
-import { ERole } from "@app/common";
-import { IsOptional, IsString , IsNumber } from "class-validator";
+import { ERole, PaginatorInfo } from '@app/common';
+import { User } from '@src/schemas';
+import { IsOptional, IsString, IsNumber } from 'class-validator';
 
-export class GetUserInput {
-    
-    @IsOptional()
-    @IsString()
-    fullname?: string;
+export class GetUsersInput {
+  @IsOptional()
+  @IsString()
+  fullname?: string;
 
-    @IsOptional()
-    @IsString()
-    role?: ERole;
-  
-    @IsOptional()
-    @IsNumber()
-    limit?: number;
+  @IsOptional()
+  @IsString()
+  role?: ERole;
 
-    @IsOptional()
-    @IsNumber()
-    skip?: number;
+  @IsOptional()
+  @IsNumber()
+  limit?: number;
+
+  @IsOptional()
+  @IsNumber()
+  skip?: number;
+}
+
+export interface GetUsersPaginator {
+  data: User[];
+  paginatorInfo: PaginatorInfo;
 }

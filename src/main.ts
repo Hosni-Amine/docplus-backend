@@ -6,14 +6,17 @@ import { ConfigService } from '@nestjs/config';
 async function bootstrap() {
   const configService = new ConfigService();
   const app = await NestFactory.create(AppModule);
-  
+
   app.setGlobalPrefix('/api', {
-    exclude: [{ path: '*', method: RequestMethod.ALL }]
+    exclude: [{ path: '*', method: RequestMethod.ALL }],
   });
-  
+
   // Updated CORS configuration
   app.enableCors({
-    origin: [configService.get('FRONTEND_URL_PROD'),configService.get('FRONTEND_URL')],
+    origin: [
+      configService.get('FRONTEND_URL_PROD'),
+      configService.get('FRONTEND_URL'),
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
     allowedHeaders: [
@@ -30,13 +33,13 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
-  
+
   const port = configService.get('PORT') || 4000;
   await app.listen(port, '0.0.0.0');
-  
+
   console.log(`
-    🚀 Server running
-    📝 Environment: ${process.env.NODE_ENV || 'development'}
-  `);
+🚀 Server running on port ${port}
+📝 Environment: ${process.env.NODE_ENV || 'development'}
+`);
 }
 bootstrap();

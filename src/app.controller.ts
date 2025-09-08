@@ -1,16 +1,13 @@
 import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
 import { AppService } from './app.service';
-import { MailingService, MailTemplate } from './mailing/mailing.service';
+import { MailTemplate } from './mailing/mailing.service';
 import { Response } from 'express';
 import * as fs from 'node:fs/promises';
 import * as Handlebars from 'handlebars';
 
 @Controller('app')
 export class AppController {
-  constructor(
-    private readonly appService: AppService,
-    private readonly mailingService: MailingService,
-  ) {}
+  constructor(private readonly appService: AppService) {}
 
   @Get()
   getHello(): string {
@@ -32,10 +29,10 @@ export class AppController {
     })(
       {
         fullname: 'amine',
-        expirationHours:'12',
+        expirationHours: '12',
         url:
           'https://www.google.com' +
-          'confirm/' + 
+          'confirm/' +
           'token' +
           '?email=' +
           'amine@gmail.com',
@@ -43,7 +40,7 @@ export class AppController {
       { allowProtoPropertiesByDefault: true },
     );
     res.status(HttpStatus.OK).send(html);
-      /* try {
+    /* try {
         this.mailingService.sendMail({
             templatePath: MailTemplate.Confirmation,
             context: {

@@ -1,54 +1,57 @@
-import {Body,Controller,Get,Patch,Post,Res} from '@nestjs/common';
+import { Body, Controller, Patch, Post, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
-import { SigninReqDTO, SigninResDTO, ConfirmReqDTO, RequestResetPasswordReqDTO } from '@app/common';
+import {
+  SigninReqInput,
+  SigninRes,
+  ConfirmUserReqInput,
+  RequestResetPasswordReqInput,
+} from '@app/common';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-  ) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('/signin')
-  async signIn(@Body() body: SigninReqDTO, @Res() response: Response) {
-    const res: SigninResDTO = await this.authService.signIn(body);
+  async signIn(@Body() body: SigninReqInput, @Res() response: Response) {
+    const res: SigninRes = await this.authService.signIn(body);
     return response.status(res.status).send({
-      ...res
+      ...res,
     });
   }
 
   @Patch('/reset-password')
-  async resetPassword(@Body() body: ConfirmReqDTO, @Res() response: Response) {
+  async resetPassword(
+    @Body() body: ConfirmUserReqInput,
+    @Res() response: Response,
+  ) {
     const res = await this.authService.resetPassword(body);
-    //NB ; THJIS SHOULD BE LIKE THAT TO SECURE THE STATUS OF THE RESPONSE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     return response.status(res.status).send({
-      ...res
-    })
+      ...res,
+    });
   }
 
   @Patch('/confirm')
-  async confirmUser(@Body() body: ConfirmReqDTO, @Res() response: Response) {
-    console.log(body)
-      const res = await this.authService.confirmUser(body);
-      return response.status(res.status).send({
-        ...res
-      });
+  async confirmUser(
+    @Body() body: ConfirmUserReqInput,
+    @Res() response: Response,
+  ) {
+    console.log(body);
+    const res = await this.authService.confirmUser(body);
+    return response.status(res.status).send({
+      ...res,
+    });
   }
 
   @Post('/request-reset-password')
-  async requestResetPassword(@Body() body: RequestResetPasswordReqDTO, @Res() response: Response) {
+  async requestResetPassword(
+    @Body() body: RequestResetPasswordReqInput,
+    @Res() response: Response,
+  ) {
     console.log(body);
-      const res = await this.authService.requestResetPassword(body.email);
-      return response.status(res.status).send({
-        ...res
-      });
-  }
-
-    /* @Post('/signup')
-  async signUp(@Body() body: SignupReqDTO, @Res() response: Response) {
-    const res = await this.authService.signUp(body);
+    const res = await this.authService.requestResetPassword(body.email);
     return response.status(res.status).send({
-      ...res
-    })
-  } */
+      ...res,
+    });
+  }
 }
