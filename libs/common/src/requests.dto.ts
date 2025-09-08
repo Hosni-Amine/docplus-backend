@@ -1,47 +1,26 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsPhoneNumber, Length } from "class-validator";
-import { ERole } from "./enums";
+import { IsEmail, IsNotEmpty, Length } from 'class-validator';
 
-export class SigninReqDTO {
-    @IsNotEmpty()
-    @IsEmail()
-    login: string;
+export class SigninReqInput {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
 
-    @IsNotEmpty()
-    @Length(6, 50)
-    password: string;
+  @IsNotEmpty()
+  @Length(6, 50)
+  password: string;
 }
 
-export class SignupReqDTO {
-    @IsNotEmpty()
-    @IsEmail()
-    email: string;
+export class ConfirmUserReqInput {
+  @IsNotEmpty()
+  token: string;
 
-    @IsNotEmpty()
-    @Length(6, 50)
-    password: string;
-
-    @IsPhoneNumber()
-    @IsOptional()
-    phone: string;
-
-    @IsOptional()
-    fullname?: string;
-
-    @IsNotEmpty()
-    role: ERole;
+  @IsNotEmpty()
+  @Length(6, 50)
+  password: string;
 }
 
-export class ConfirmReqDTO {
-    @IsNotEmpty()
-    token: string;
-
-    @IsNotEmpty()
-    @Length(6, 50)
-    password: string;
-}
-
-export class RequestResetPasswordReqDTO {
-    @IsNotEmpty()
-    @IsEmail()
-    email: string;
+export class RequestResetPasswordReqInput {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
 }

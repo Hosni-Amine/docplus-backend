@@ -1,4 +1,4 @@
-import { User } from "@src/user/schemas/user.schema";
+import { User } from '@src/user/entities/user.entity';
 
 interface IBaseRes {
   message?: string;
@@ -8,30 +8,30 @@ interface IBaseRes {
 /***
  *  Auth Module
  */
-export  interface SigninResDTO extends IBaseRes {
+export interface SigninRes extends IBaseRes {
   user: User;
   token: string;
 }
 
-export  interface SignupResDTO extends IBaseRes {
+export interface SignupRes extends IBaseRes {
   user: User;
 }
 
-export  interface ConfirmResDTO extends IBaseRes {
+export interface ConfirmRes extends IBaseRes {
   user: User;
 }
 
-export  interface GetUserResDTO extends IBaseRes {
+export interface GetUserRes extends IBaseRes {
   user: User;
 }
 
 export interface PaginatorInfo {
-  count: number;        
-  currentPage: number;  
-  perPage: number;     
-  totalPages: number;  
+  count: number;
+  currentPage: number;
+  perPage: number;
+  totalPages: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
-  nextPage: number | null;  
+  nextPage: number | null;
   prevPage: number | null;
 }

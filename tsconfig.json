@@ -18,27 +18,13 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@app/common": [
-        "libs/common/src"
-      ],
-      "@app/common/*": [
-        "libs/common/src/*"
-      ],
-      "@src/*": [
-        "src/*"
-      ],
-      "@schemas/*": [
-        "src/schemas/*"
-      ],
-      "@schemas": [
-        "src/schemas"
-      ],
-      "@decorators": [
-        "src/decorators"
-      ],
-      "@modules/*": [
-        "src/modules/*"
-      ],
+      "@app/common": ["libs/common/src"],
+      "@app/common/*": ["libs/common/src/*"],
+      "@src/*": ["src/*"],
+      "@schemas/*": ["src/schemas/*"],
+      "@schemas": ["src/schemas"],
+      "@decorators": ["src/decorators"],
+      "@modules/*": ["src/modules/*"]
     }
   }
 }
