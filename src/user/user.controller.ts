@@ -13,8 +13,7 @@ import { UserService } from './user.service';
 import { AuthGuard, RolesGuard } from '@src/guards';
 import { CurrentUser } from '@src/decorators';
 import { User } from './entities/user.entity';
-import { ERole, GetUserRes } from '@app/common';
-import { Roles } from '@src/decorators/roles.decorator';
+import { GetUserRes } from '@common';
 import { GetUsersPaginator } from './dto/get-users-input';
 import { GetUsersInput } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
@@ -58,33 +57,23 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(ERole.ADMIN, ERole.DOCTOR, ERole.SECRETARY)
   @Patch()
   async updateUser(
     @Body() updateUserInput: UpdateUserInput,
     @Res() response: Response,
   ) {
+    console.log(updateUserInput);
     const res = await this.userService.updateUser(updateUserInput);
     return response.status(res.status).send({
       ...res,
     });
   }
 
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(ERole.ADMIN, ERole.SECRETARY, ERole.DOCTOR)
-  @Delete(':id')
-  async deleteUser(@Param('id') id: string, @Res() response: Response) {
-    const res = await this.userService.deleteUser(id);
-    return response.status(res.status).send({
-      ...res,
-    });
-  }
-
   @UseGuards(AuthGuard)
-  @Get()
-  async getUsers(
+  @Get('with-pagination')
+  async getUsersWithPagination(
     @Body() getUsersInput: GetUsersInput,
   ): Promise<GetUsersPaginator> {
-    return await this.userService.getUsers(getUsersInput);
+    return await this.userService.getUsersWithPagination(getUsersInput);
   }
 }

@@ -8,7 +8,11 @@ interface IBaseRes {
 /***
  *  Auth Module
  */
-export interface SigninRes extends IBaseRes {
+export interface RequestOtpRes extends IBaseRes {
+  otp_confirmation_token?: string;
+}
+
+export interface VerifyOtpRes extends IBaseRes {
   user: User;
   token: string;
 }

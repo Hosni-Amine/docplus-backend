@@ -1,4 +1,4 @@
-import { AbstractDocument, EAppointmentStatus } from '@app/common';
+import { AbstractDocument, EAppointmentStatus } from '@common';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 import { User } from '@src/user/entities/user.entity';

@@ -1,14 +1,39 @@
-import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { Types } from 'mongoose';
-import { CreateUserInput } from './create-user.input';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsEmail } from 'class-validator';
+import { ERole } from '@common/enums';
 
-export class UpdateUserInput extends CreateUserInput {
+export class UpdateUserInput {
   @IsNotEmpty()
-  @Transform(({ value }) => new Types.ObjectId(value))
+  @IsString()
   id: string;
 
   @IsOptional()
   @IsString()
   photo?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isBlocked?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isDeleted?: boolean;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  fullname?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  role?: ERole;
 }

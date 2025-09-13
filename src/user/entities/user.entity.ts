@@ -1,4 +1,4 @@
-import { AbstractDocument, ERole } from '@app/common';
+import { AbstractDocument, ERole } from '@common';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 @Schema({
@@ -8,15 +8,13 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
     updatedAt: 'updated_at',
   },
 })
+
 export class User extends AbstractDocument {
   @Prop()
   email?: string;
 
   @Prop()
   photo?: string;
-
-  @Prop()
-  password?: string;
 
   @Prop()
   phone?: string;
@@ -28,16 +26,16 @@ export class User extends AbstractDocument {
   role: ERole;
 
   @Prop({ default: false })
-  is_verified: boolean;
-
-  @Prop({ default: false })
-  is_completed: boolean;
+  isBlocked: boolean;
 
   @Prop({ nullable: true })
-  confirmation_token?: string;
+  otp_code?: string;
 
   @Prop({ nullable: true })
-  confirmation_token_validity?: Date;
+  otp_expires_at?: Date;
+
+  @Prop({ nullable: true })
+  otp_confirmation_token?: string;
 
   @Prop()
   address?: string;

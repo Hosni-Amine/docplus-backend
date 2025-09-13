@@ -1,16 +1,17 @@
 import {
-  ConfirmUserReqInput,
-  ConfirmRes,
-  SigninReqInput,
-  SigninRes,
-} from '@app/common';
+  RequestOtpReqInput,
+  RequestOtpRes,
+  VerifyOtpReqInput,
+  VerifyOtpRes,
+} from '@common';
 import { JwtService } from '@nestjs/jwt';
-import * as argon from 'argon2';
 import { UserRepository } from '@src/user/user.repository';
 import { Injectable, Logger } from '@nestjs/common';
 import { MailingService } from '@src/mailing/mailing.service';
 import { ConfigService } from '@nestjs/config';
+import { OtpService } from '@common';
 import { v4 as uuidv4 } from 'uuid';
+import { User } from '@src/user/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -20,259 +21,173 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly mailingService: MailingService,
     private readonly configService: ConfigService,
+    private readonly otpService: OtpService,
   ) {}
 
-  async signIn(body: SigninReqInput): Promise<SigninRes> {
+  async requestOtp(body: RequestOtpReqInput): Promise<RequestOtpRes> {
+    const session = await this.userRepository.startTransaction();
     try {
       const current_user = await this.userRepository.findOne({
         email: body.email,
       });
 
       if (!current_user) {
-        this.logger.error('Bad Credentials');
+        this.logger.error('User not found');
         return {
-          user: null,
-          token: null,
-          message: 'BAD_CREDENTIALS',
+          message: 'USER_NOT_FOUND',
+          status: 404,
+        };
+      }
+
+      if (current_user.isBlocked || current_user.isDeleted) {
+        this.logger.error('User is blocked');
+        return {
+          message: 'USER_IS_BLOCKED',
           status: 400,
         };
       }
-      if (!current_user.is_verified) {
-        this.logger.error('User is not verified');
-        return {
-          user: null,
-          token: null,
-          message: 'USER_NOT_VERIFIED',
-          status: 400,
-        };
-      }
-      const pwd_matches = await argon.verify(
-        current_user.password,
-        body.password,
+
+      // Generate OTP code and expiration
+      const otpCode = this.otpService.generateOtpCode();
+      const otpConfirmationToken = uuidv4();
+      const otpExpiresAt = this.otpService.generateOtpExpiration(5); // 5 minutes
+
+      // Update user with OTP code
+      await this.userRepository.findOneAndUpdate(
+        { email: body.email },
+        {
+          $set: {
+            otp_confirmation_token: otpConfirmationToken,
+            otp_code: otpCode,
+            otp_expires_at: otpExpiresAt,
+          },
+        },
       );
-      if (!pwd_matches) {
-        this.logger.error('Bad Credentials');
+
+      // Send OTP via email
+      const is_sent = await this.mailingService.sendOtpCode(
+        current_user.email,
+        current_user.fullname,
+        otpCode,
+        5, // 5 minutes
+      );
+
+      if (!is_sent) {
+        this.logger.error(`Error sending OTP email to ${current_user.email}!`);
+        await session.abortTransaction();
         return {
-          user: null,
-          token: null,
-          message: 'BAD_CREDENTIALS',
-          status: 400,
+          message: 'ERROR_SENDING_OTP_EMAIL_TRY_AGAIN',
+          status: 500,
         };
       }
 
-      delete current_user.password;
-
-      const payload = {
-        id: current_user._id.toString(),
-        role: current_user.role,
-        fullname: current_user.fullname,
-        email: current_user.email,
-      };
-
-      const token = await this.jwtService.signAsync(payload, {
-        secret: this.configService.get('JWT_SECRET'),
-        expiresIn: this.configService.get('JWT_EXPIRY'),
-        algorithm: 'HS256',
-      });
+      await session.commitTransaction();
+      this.logger.log(`OTP code sent successfully to ${current_user.email}`);
 
       return {
-        user: current_user,
-        token,
-        message: 'LOGGED_IN_SUCCESSFULLY',
+        otp_confirmation_token: otpConfirmationToken,
+        message: 'OTP_SENT_SUCCESSFULLY',
         status: 200,
       };
     } catch (error) {
-      this.logger.error('Error during sign in:', error);
+      await session.abortTransaction();
+      this.logger.error('Error during OTP request:', error);
       return {
-        user: null,
-        token: null,
         message: 'INTERNAL_SERVER_ERROR',
         status: 500,
       };
     }
   }
 
-  async confirmUser(body: ConfirmUserReqInput): Promise<ConfirmRes> {
+  async verifyOtp(body: VerifyOtpReqInput): Promise<VerifyOtpRes> {
     const session = await this.userRepository.startTransaction();
     try {
       const current_user = await this.userRepository.findOne({
-        confirmation_token: body.token,
-      });
-      if (!current_user) {
-        this.logger.error(
-          `This confirmation token ${body.token} doesn't exist!`,
-        );
-        return {
-          user: null,
-          message: `This confirmation token ${body.token} doesn't exist!`,
-          status: 400,
-        };
-      }
-      if (current_user.is_verified) {
-        this.logger.error(
-          `This user ${current_user.email} is already verified!`,
-        );
-        return {
-          user: null,
-          message: `This user ${current_user.email} is already verified!`,
-          status: 400,
-        };
-      }
-
-      const hashedPassword = await argon.hash(body.password);
-
-      const verified_user = await this.userRepository.findOneAndUpdate(
-        { confirmation_token: body.token },
-        {
-          $set: {
-            is_verified: true,
-            password: hashedPassword,
-            confirmation_token: null,
-            confirmation_token_validity: null,
-          },
-        },
-      );
-
-      this.logger.log(current_user?.email + ' verified successfully');
-
-      await session.commitTransaction();
-
-      delete verified_user.password;
-      delete verified_user.isDeleted;
-
-      return {
-        user: verified_user,
-        message: 'VERIFIED_SUCCESSFULLY',
-        status: 200,
-      };
-    } catch (error) {
-      await session.abortTransaction();
-      this.logger.error(error);
-      return {
-        user: null,
-        message: 'ERROR_CONFIRMING_USER',
-        status: 500,
-      };
-    }
-  }
-
-  async resetPassword(body: ConfirmUserReqInput): Promise<ConfirmRes> {
-    const session = await this.userRepository.startTransaction();
-    const now = new Date();
-    try {
-      const current_user = await this.userRepository.findOne({
-        confirmation_token: body.token,
-        confirmation_token_validity: { $gte: now },
+        email: body.email,
       });
 
       if (!current_user) {
-        this.logger.error(
-          `This confirmation token ${body.token} doesn't exist!`,
-        );
+        this.logger.error('User not found');
         return {
           user: null,
-          message: `This confirmation token ${body.token} doesn't exist!`,
+          token: null,
+          message: 'USER_NOT_FOUND',
+          status: 404,
+        };
+      }
+
+      if (!current_user.otp_code || !current_user.otp_expires_at) {
+        this.logger.error('No OTP code found for user');
+        return {
+          user: null,
+          token: null,
+          message: 'NO_OTP_CODE_FOUND',
+          status: 400,
+        };
+      }
+      
+      // Validate OTP
+      const now = new Date();
+      const validOTP = now > current_user.otp_expires_at && current_user.otp_code === body.otp_code && current_user.otp_confirmation_token === body.otp_confirmation_token;
+      if (!validOTP) {
+        this.logger.error(`OTP validation failed`);
+        return {
+          user: null,
+          token: null,
+          message: 'OTP_VALIDATION_FAILED',
           status: 400,
         };
       }
 
-      const hashPassword = await argon.hash(body.password);
-      const verified_user = await this.userRepository.findOneAndUpdate(
-        { confirmation_token: body.token },
-        {
-          $set: {
-            confirmation_token: null,
-            confirmation_token_validity: null,
-            password: hashPassword,
-          },
-        },
-      );
-
-      await session.commitTransaction();
-
-      delete verified_user.password;
-      delete verified_user.isDeleted;
-
-      return {
-        user: verified_user,
-        message: 'PASSWORD_RESET_SUCCESSFULLY',
-        status: 200,
-      };
-    } catch (error) {
-      await session.abortTransaction();
-      this.logger.error(error);
-      return {
-        user: null,
-        message: 'ERROR_RESETTING_PASSWORD',
-        status: 500,
-      };
-    }
-  }
-
-  async requestResetPassword(email: string): Promise<ConfirmRes> {
-    const session = await this.userRepository.startTransaction();
-    try {
-      const current_user = await this.userRepository.findOne({ email: email });
-      if (!current_user) {
-        this.logger.error(`This email ${email} doesn't exist!`);
-        return {
-          user: null,
-          message: `THIS_EMAIL_DOES_NOT_EXIST`,
-          status: 400,
-        };
-      }
-      const expirationHours = 12;
-      const confirmationToken = uuidv4();
-
-      // Update user with new token first
+      // Clear OTP data from database
       await this.userRepository.findOneAndUpdate(
-        { email: email },
+        { email: body.email },
         {
-          $set: {
-            confirmation_token: confirmationToken,
-            is_verified: false,
-            confirmation_token_validity: new Date(
-              Date.now() + 1000 * 60 * 60 * expirationHours,
-            ),
+          $unset: {
+            otp_code: 1,
+            otp_expires_at: 1,
+            otp_confirmation_token: 1,
           },
         },
       );
-
-      // Then send email
-      const is_sent = await this.mailingService.sendUserResetPassword(
-        current_user.email,
-        current_user.fullname,
-        confirmationToken,
-        expirationHours,
-      );
-
-      if (!is_sent) {
-        this.logger.error(
-          `Error sending reset password email to ${current_user.email}!`,
-        );
-        await session.abortTransaction();
-        return {
-          user: null,
-          message: `ERROR_SENDING_RESET_PASSWORD_EMAIL`,
-          status: 500,
-        };
-      }
-
+  
+      // Generate JWT token
+      const payload = {
+        id: current_user._id.toString(),
+        role: current_user.role,
+        fullname: current_user.fullname,
+        email: current_user.email,
+      };
+  
+      const token = await this.jwtService.signAsync(payload, {
+        secret: this.configService.get('JWT_SECRET'),
+        expiresIn: this.configService.get('JWT_EXPIRY'),
+        algorithm: 'HS256',
+      });
+  
+      const loginInfo = {
+        _id: current_user._id,
+        role: current_user.role,
+        fullname: current_user.fullname,
+        email: current_user.email,
+      } as User;
+  
       await session.commitTransaction();
-      this.logger.log(
-        current_user?.email + ' password reset request sent successfully',
-      );
+      this.logger.log(`User ${current_user.email} logged in successfully`);
+  
       return {
-        user: null,
-        message: 'PASSWORD_RESET_REQUEST_SENT_SUCCESSFULLY',
+        user: loginInfo,
+        token,
+        message: 'LOGGED_IN_SUCCESSFULLY',
         status: 200,
       };
     } catch (error) {
       await session.abortTransaction();
-      this.logger.error(error);
+      this.logger.error('Error during OTP verification:', error);
       return {
         user: null,
-        message: 'ERROR_SENDING_RESET_PASSWORD_EMAIL',
+        token: null,
+        message: 'INTERNAL_SERVER_ERROR',
         status: 500,
       };
     }

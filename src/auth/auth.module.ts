@@ -5,10 +5,13 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '@src/user/entities/user.entity';
 import { UserRepository } from '@src/user/user.repository';
 import { MailingService } from '@src/mailing/mailing.service';
-import { DatabaseModule } from '@app/common/database/database.module';
+import { DatabaseModule } from '@common/database/database.module';
+import { CommonModule } from '@common';
+
 @Module({
   imports: [
     DatabaseModule,
+    CommonModule,
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   controllers: [AuthController],
