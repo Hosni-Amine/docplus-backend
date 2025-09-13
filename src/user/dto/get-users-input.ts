@@ -1,6 +1,6 @@
-import { ERole, PaginatorInfo } from '@app/common';
+import { ERole, PaginatorInfo } from '@common';
 import { User } from '@src/schemas';
-import { IsOptional, IsString, IsNumber } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsBoolean } from 'class-validator';
 
 export class GetUsersInput {
   @IsOptional()
@@ -18,6 +18,10 @@ export class GetUsersInput {
   @IsOptional()
   @IsNumber()
   skip?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isDeleted?: boolean;
 }
 
 export interface GetUsersPaginator {

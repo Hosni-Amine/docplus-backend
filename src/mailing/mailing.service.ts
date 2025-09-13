@@ -6,8 +6,8 @@ import Handlebars from 'handlebars';
 
 const customHandlebars = Handlebars.create();
 export enum MailTemplate {
-  Confirmation = 'confirmation.hbs',
-  ResetPassword = 'reset-password.hbs',
+  WelcomeEmail = 'welcome-email.hbs',
+  OtpCodeEmail = 'otp-code-email.hbs',
 }
 
 @Injectable()
@@ -105,56 +105,49 @@ export class MailingService {
     }
   }
 
-  async sendUserConfirmation(
+  async sendWelcomeEmail(
     email: string,
     fullname: string,
-    token: string,
-  ): Promise<void> {
-    try {
-      this.sendMail({
-        templatePath: MailTemplate.Confirmation,
-        context: {
-          fullname,
-          url:
-            this.configService.get<string>('FRONTEND_URL') +
-            '/confirm/' +
-            '?token=' +
-            token,
-        },
-        to: email,
-        subject: "Votre compte a été créer et vous devez l'activer",
-      });
-      this.logger.log('Confirmation email sent successfully to: ' + email);
-    } catch (error) {
-      this.logger.error('Failed to send confirmation email:', error);
-    }
-  }
-
-  async sendUserResetPassword(
-    email: string,
-    fullname: string,
-    token: string,
-    expirationHours: number,
   ): Promise<boolean> {
     try {
       this.sendMail({
-        templatePath: MailTemplate.ResetPassword,
+        templatePath: MailTemplate.WelcomeEmail,
         context: {
-          expirationHours,
           fullname,
           url:
             this.configService.get<string>('FRONTEND_URL') +
-            '/reset-password/' +
-            '?token=' +
-            token,
+            'signin',
         },
         to: email,
-        subject: 'Réinitialiser votre mot de passe',
+        subject: 'Bienvenue sur DocPlus',
       });
-      this.logger.log('Reset password email sent successfully to: ' + email);
       return true;
     } catch (error) {
-      this.logger.error('Failed to send reset password email:', error);
+      this.logger.error('Failed to send welcome email:', error);
+      return false;
+    }
+  }
+
+  async sendOtpCode(
+    email: string,
+    fullname: string,
+    otpCode: string,
+    expirationMinutes: number,
+  ): Promise<boolean> {
+    try {
+      this.sendMail({
+        templatePath: MailTemplate.OtpCodeEmail,
+        context: {
+          fullname,
+          otpCode,
+          expirationMinutes,
+        },
+        to: email,
+        subject: 'Code de vérification - DocPlus',
+      });
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to send OTP code email:', error);
       return false;
     }
   }

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>MedPlatform - Vérification d'Email</title>
+    <title>DocPlus - Bienvenue</title>
     <style>
         body {
             font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
@@ -88,25 +88,25 @@
     <div class="container">
         <div class="header">
             <!-- <img src="logo-url" alt="MedPlatform" class="logo"> -->
-            <h1 class="title">Vérification d'Email Requise</h1>
+            <h1 class="title">Bienvenue sur DocPlus</h1>
         </div>
         <div class="security-notice">
             <strong>
                 {{#if fullname}}
                     <p>Cher/Chère {{fullname}},</p>
                 {{else}}
-                    <p>Cher/Chère Patient(e),</p>
+                    <p>Cher/Chère Client(e),</p>
                 {{/if}}
             </strong>
-            <p>Pour valider votre compte MedPlatform, nous vous avons envoyé cet e-mail de confirmation. Pour finaliser votre inscription et commencer à utiliser nos services, cliquez sur le bouton ci-dessous.</p>
+            <p>Bienvenue sur DocPlus. Pour commencer à utiliser nos services, cliquez sur le bouton ci-dessous.</p>
         </div>
         <div style="text-align: center;">
-            <a href="{{url}}" class="button">Vérifier l'Adresse Email</a>
+            <a href="{{url}}" class="button">Se connecter</a>
         </div>
         <div class="footer">
             {{!-- <p>Ce lien expirera dans {{expirationHours}} heures</p> --}}
             <p>Ceci est un message automatique - merci de ne pas répondre à cet email.</p>
-            <p>© MedPlatform. Tous droits réservés.</p>
+            <p>© DocPlus. Tous droits réservés.</p>
         </div>
     </div>
 </body>

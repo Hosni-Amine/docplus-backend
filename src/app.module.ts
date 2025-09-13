@@ -6,7 +6,7 @@ import { AppService } from './app.service';
 import { UserModule } from '@src/user/user.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-import { DatabaseModule } from '@app/common/database/database.module';
+import { DatabaseModule } from '@common/database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { MailingModule } from './mailing/mailing.module';
 
