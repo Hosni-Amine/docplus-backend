@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { GetUserRes } from '@common/responses.dto';
 import { ERole, handleFileUpload } from '@common';
 import { GetUsersPaginator } from './dto/get-users-input';
 import { GetUsersInput } from './dto/get-users-input';
@@ -7,6 +6,7 @@ import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update.user.input';
 import { MailingService } from '@src/mailing/mailing.service';
 import { UserRepository } from './user.repository';
+import { GetUserRes } from './user.controller';
 
 @Injectable()
 export class UserService {

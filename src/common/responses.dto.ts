@@ -1,32 +1,6 @@
-import { User } from '@src/user/entities/user.entity';
-
-interface IBaseRes {
+export interface IBaseRes {
   message?: string;
   status?: number;
-}
-
-/***
- *  Auth Module
- */
-export interface RequestOtpRes extends IBaseRes {
-  otp_confirmation_token?: string;
-}
-
-export interface VerifyOtpRes extends IBaseRes {
-  user: User;
-  token: string;
-}
-
-export interface SignupRes extends IBaseRes {
-  user: User;
-}
-
-export interface ConfirmRes extends IBaseRes {
-  user: User;
-}
-
-export interface GetUserRes extends IBaseRes {
-  user: User;
 }
 
 export interface PaginatorInfo {

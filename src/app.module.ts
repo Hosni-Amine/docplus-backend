@@ -9,12 +9,14 @@ import { join } from 'path';
 import { DatabaseModule } from '@common/database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { MailingModule } from './mailing/mailing.module';
+import { OfficeModule } from './office/office.module';
 
 @Module({
   imports: [
     DatabaseModule,
     AuthModule,
     UserModule,
+    OfficeModule,
     MailingModule,
     ConfigModule.forRoot({
       isGlobal: true,

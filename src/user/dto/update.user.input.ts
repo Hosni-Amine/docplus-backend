@@ -1,7 +1,9 @@
 import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsEmail } from 'class-validator';
 import { ERole } from '@common/enums';
+import { PartialType } from '@nestjs/swagger';
+import { CreateUserInput } from './create-user.input';
 
-export class UpdateUserInput {
+export class UpdateUserInput extends PartialType(CreateUserInput) {
   @IsNotEmpty()
   @IsString()
   id: string;
@@ -17,23 +19,4 @@ export class UpdateUserInput {
   @IsOptional()
   @IsBoolean()
   isDeleted?: boolean;
-
-  @IsOptional()
-  @IsEmail()
-  email?: string;
-
-  @IsOptional()
-  @IsString()
-  phone?: string;
-
-  @IsOptional()
-  @IsString()
-  fullname?: string;
-
-  @IsOptional()
-  @IsString()
-  address?: string;
-
-  @IsOptional()
-  role?: ERole;
 }

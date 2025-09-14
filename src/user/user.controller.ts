@@ -3,8 +3,6 @@ import {
   Get,
   Body,
   Patch,
-  Param,
-  Delete,
   UseGuards,
   Post,
   Res,
@@ -13,12 +11,16 @@ import { UserService } from './user.service';
 import { AuthGuard, RolesGuard } from '@src/guards';
 import { CurrentUser } from '@src/decorators';
 import { User } from './entities/user.entity';
-import { GetUserRes } from '@common';
 import { GetUsersPaginator } from './dto/get-users-input';
 import { GetUsersInput } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update.user.input';
 import { Response } from 'express';
+import { IBaseRes } from '@common/responses.dto';
+
+export interface GetUserRes extends IBaseRes {
+  user: User;
+}
 
 @Controller('user')
 export class UserController {

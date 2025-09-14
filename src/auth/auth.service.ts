@@ -1,17 +1,16 @@
-import {
-  RequestOtpReqInput,
-  RequestOtpRes,
-  VerifyOtpReqInput,
-  VerifyOtpRes,
-} from '@common';
 import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from '@src/user/user.repository';
 import { Injectable, Logger } from '@nestjs/common';
 import { MailingService } from '@src/mailing/mailing.service';
 import { ConfigService } from '@nestjs/config';
-import { OtpService } from '@common';
+import { IBaseRes, OtpService } from '@common';
+import { RequestOtpReqInput, RequestOtpRes, VerifyOtpReqInput, VerifyOtpRes } from './dto/auth.args';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '@src/user/entities/user.entity';
+
+export interface GetUserRes extends IBaseRes {
+  user: User;
+}
 
 @Injectable()
 export class AuthService {
@@ -128,7 +127,7 @@ export class AuthService {
       
       // Validate OTP
       const now = new Date();
-      const validOTP = now > current_user.otp_expires_at && current_user.otp_code === body.otp_code && current_user.otp_confirmation_token === body.otp_confirmation_token;
+      const validOTP = now < current_user.otp_expires_at && current_user.otp_code === body.otp_code && current_user.otp_confirmation_token === body.otp_confirmation_token;
       if (!validOTP) {
         this.logger.error(`OTP validation failed`);
         return {

@@ -1,4 +1,4 @@
-import { ERole, PaginatorInfo } from '@common';
+import { ERole, IBaseRes, PaginatorInfo } from '@common';
 import { User } from '@src/schemas';
 import { IsOptional, IsString, IsNumber, IsBoolean } from 'class-validator';
 

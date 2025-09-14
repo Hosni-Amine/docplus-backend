@@ -6,7 +6,7 @@ import {
   RequestOtpRes,
   VerifyOtpReqInput,
   VerifyOtpRes,
-} from '@common';
+} from './dto/auth.args';
 
 @Controller('auth')
 export class AuthController {
