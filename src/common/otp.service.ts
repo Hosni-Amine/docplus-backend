@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class OtpService {
-
   /**
    * Generate a 6-digit OTP code
    */
@@ -17,5 +16,4 @@ export class OtpService {
   generateOtpExpiration(minutes: number = 5): Date {
     return new Date(Date.now() + minutes * 60 * 1000);
   }
-
 }

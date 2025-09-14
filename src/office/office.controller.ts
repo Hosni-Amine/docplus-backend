@@ -6,9 +6,7 @@ import {
   Param,
   Patch,
   Post,
-  Res,
 } from '@nestjs/common';
-import { Response } from 'express';
 import { OfficeService } from './office.service';
 import { CreateOfficeInput } from './dto/create-office.input';
 import { UpdateOfficeInput } from './dto/update.office.input';
@@ -18,8 +16,8 @@ import { GetOfficesInput } from './dto/get-offices-input';
 import { GetOfficesPaginator } from './dto/get-offices-input';
 
 export interface GetOfficeRes extends IBaseRes {
-    office?: Office;
-  }
+  office?: Office;
+}
 
 @Controller('office')
 export class OfficeController {
@@ -28,53 +26,33 @@ export class OfficeController {
   @Post()
   async createOffice(
     @Body() createOfficeInput: CreateOfficeInput,
-    @Res() response: Response,
-  ) {
-    const res: GetOfficeRes = await this.officeService.createOffice(createOfficeInput);
-    return response.status(res.status).send({
-      ...res,
-    });
+  ): Promise<GetOfficeRes> {
+    return await this.officeService.createOffice(createOfficeInput);
   }
 
   @Get('with-pagination')
   async getOfficesWithPagination(
     @Body() getOfficeInput: GetOfficesInput,
   ): Promise<GetOfficesPaginator> {
-    return await this.officeService.getOfficesWithPagination(
-      getOfficeInput,
-    );
+    return await this.officeService.getOfficesWithPagination(getOfficeInput);
   }
 
   @Get(':id')
-  async getOfficeById(@Param('id') id: string, @Res() response: Response) {
-    const res: GetOfficeRes = await this.officeService.getOfficeById(id);
-    return response.status(res.status).send({
-      ...res,
-    });
+  async getOfficeById(@Param('id') id: string): Promise<GetOfficeRes> {
+    return await this.officeService.getOfficeById(id);
   }
 
   @Patch()
   async updateOffice(
     @Body() updateOfficeInput: UpdateOfficeInput,
-    @Res() response: Response,
-  ) {
-    const res: GetOfficeRes = await this.officeService.updateOffice(updateOfficeInput);
-    return response.status(res.status).send({
-      ...res,
-    });
+  ): Promise<GetOfficeRes> {
+    return await this.officeService.updateOffice(updateOfficeInput);
   }
 
   @Delete()
   async deleteOffice(
-    @Body() body: { id: string; isDeleted: boolean },
-    @Res() response: Response,
-  ) {
-    const res: GetOfficeRes = await this.officeService.deleteOffice(
-      body.id,
-      body.isDeleted,
-    );
-    return response.status(res.status).send({
-      ...res,
-    });
+    @Body() deleteOfficeInput: { officeId: string; isDeleted: boolean },
+  ): Promise<GetOfficeRes> {
+    return await this.officeService.deleteOffice(deleteOfficeInput);
   }
 }

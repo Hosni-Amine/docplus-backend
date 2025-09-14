@@ -1,5 +1,6 @@
 export enum ERole {
   DOCTOR = 'DOCTOR',
+  ADMIN_DOCTOR = 'ADMIN_DOCTOR',
   PATIENT = 'PATIENT',
   SECRETARY = 'SECRETARY',
   ADMIN = 'ADMIN',

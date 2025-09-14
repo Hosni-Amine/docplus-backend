@@ -55,7 +55,7 @@ export class Office extends AbstractDocument {
   };
 
   @Prop({ type: [String] })
-  images?: string[]; 
+  images?: string[];
 
   @Prop({ type: [String] })
   specializations?: string[];
