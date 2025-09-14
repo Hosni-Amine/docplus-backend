@@ -12,7 +12,9 @@ export class OfficeService {
 
   constructor(private readonly officeRepository: OfficeRepository) {}
 
-  async createOffice(createOfficeInput: CreateOfficeInput): Promise<GetOfficeRes> {
+  async createOffice(
+    createOfficeInput: CreateOfficeInput,
+  ): Promise<GetOfficeRes> {
     try {
       // Check if office with same name and address already exists
       const existingOffice = await this.officeRepository.findOne({
@@ -50,7 +52,9 @@ export class OfficeService {
     }
   }
 
-  async updateOffice(updateOfficeInput: UpdateOfficeInput): Promise<GetOfficeRes> {
+  async updateOffice(
+    updateOfficeInput: UpdateOfficeInput,
+  ): Promise<GetOfficeRes> {
     try {
       const { id, ...rest } = updateOfficeInput;
 
@@ -108,10 +112,14 @@ export class OfficeService {
     }
   }
 
-  async deleteOffice(id: string, isDeleted: boolean): Promise<GetOfficeRes> {
+  async deleteOffice(deleteOfficeInput: {
+    officeId: string;
+    isDeleted: boolean;
+  }): Promise<GetOfficeRes> {
     try {
+      const { officeId, isDeleted } = deleteOfficeInput;
       const deletedOffice = await this.officeRepository.findOneAndUpdate(
-        { _id: id },
+        { _id: officeId },
         { isDeleted: isDeleted },
       );
 
@@ -128,7 +136,6 @@ export class OfficeService {
         status: 200,
         message: 'OFFICE_DELETED_SUCCESSFULLY',
       };
-
     } catch (error) {
       this.logger.error('Error deleting office:', error);
       return {
@@ -139,7 +146,9 @@ export class OfficeService {
     }
   }
 
-  async getOfficesWithPagination(getOfficeInput: GetOfficesInput): Promise<GetOfficesPaginator> {
+  async getOfficesWithPagination(
+    getOfficeInput: GetOfficesInput,
+  ): Promise<GetOfficesPaginator> {
     try {
       const { name, type, limit = 10, skip = 0 } = getOfficeInput;
       const query: any = {};
@@ -158,7 +167,6 @@ export class OfficeService {
         sort: { name: 1 },
         select: 'name address type specializations images',
       });
-
     } catch (error) {
       this.logger.error('Error getting offices:', error);
       return {

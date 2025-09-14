@@ -4,7 +4,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MailingService } from '@src/mailing/mailing.service';
 import { ConfigService } from '@nestjs/config';
 import { IBaseRes, OtpService } from '@common';
-import { RequestOtpReqInput, RequestOtpRes, VerifyOtpReqInput, VerifyOtpRes } from './dto/auth.args';
+import {
+  RequestOtpReqInput,
+  RequestOtpRes,
+  VerifyOtpReqInput,
+  VerifyOtpRes,
+} from './dto/auth.args';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '@src/user/entities/user.entity';
 
@@ -124,10 +129,13 @@ export class AuthService {
           status: 400,
         };
       }
-      
+
       // Validate OTP
       const now = new Date();
-      const validOTP = now < current_user.otp_expires_at && current_user.otp_code === body.otp_code && current_user.otp_confirmation_token === body.otp_confirmation_token;
+      const validOTP =
+        now < current_user.otp_expires_at &&
+        current_user.otp_code === body.otp_code &&
+        current_user.otp_confirmation_token === body.otp_confirmation_token;
       if (!validOTP) {
         this.logger.error(`OTP validation failed`);
         return {
@@ -149,7 +157,7 @@ export class AuthService {
           },
         },
       );
-  
+
       // Generate JWT token
       const payload = {
         id: current_user._id.toString(),
@@ -157,23 +165,23 @@ export class AuthService {
         fullname: current_user.fullname,
         email: current_user.email,
       };
-  
+
       const token = await this.jwtService.signAsync(payload, {
         secret: this.configService.get('JWT_SECRET'),
         expiresIn: this.configService.get('JWT_EXPIRY'),
         algorithm: 'HS256',
       });
-  
+
       const loginInfo = {
         _id: current_user._id,
         role: current_user.role,
         fullname: current_user.fullname,
         email: current_user.email,
       } as User;
-  
+
       await session.commitTransaction();
       this.logger.log(`User ${current_user.email} logged in successfully`);
-  
+
       return {
         user: loginInfo,
         token,

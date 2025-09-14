@@ -105,18 +105,13 @@ export class MailingService {
     }
   }
 
-  async sendWelcomeEmail(
-    email: string,
-    fullname: string,
-  ): Promise<boolean> {
+  async sendWelcomeEmail(email: string, fullname: string): Promise<boolean> {
     try {
       this.sendMail({
         templatePath: MailTemplate.WelcomeEmail,
         context: {
           fullname,
-          url:
-            this.configService.get<string>('FRONTEND_URL') +
-            'signin',
+          url: this.configService.get<string>('FRONTEND_URL') + 'signin',
         },
         to: email,
         subject: 'Bienvenue sur DocPlus',

@@ -3,16 +3,22 @@ import { ERole, handleFileUpload } from '@common';
 import { GetUsersPaginator } from './dto/get-users-input';
 import { GetUsersInput } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
-import { UpdateUserInput } from './dto/update.user.input';
+import {
+  AffectUserToOfficeInput,
+  UpdateUserInput,
+} from './dto/update.user.input';
 import { MailingService } from '@src/mailing/mailing.service';
 import { UserRepository } from './user.repository';
 import { GetUserRes } from './user.controller';
+import { Types } from 'mongoose';
+import { OfficeRepository } from '@src/office/office.repository';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly mailingService: MailingService,
     private readonly userRepository: UserRepository,
+    private readonly officeRepository: OfficeRepository,
   ) {}
   private readonly logger = new Logger(UserService.name);
 
@@ -46,13 +52,12 @@ export class UserService {
           newUser.fullname,
         );
       }
-      
+
       return {
         user: newUser,
         status: 201,
         message: 'USER_CREATED_SUCCESSFULLY',
       };
-
     } catch (error) {
       this.logger.error(error);
       return {
@@ -113,7 +118,6 @@ export class UserService {
         status: 200,
         message: 'USER_UPDATED_SUCCESSFULLY',
       };
-
     } catch (error) {
       this.logger.error(error);
       return {
@@ -124,14 +128,16 @@ export class UserService {
     }
   }
 
-  async getUsersWithPagination(getUserInput: GetUsersInput): Promise<GetUsersPaginator> {
+  async getUsersWithPagination(
+    getUserInput: GetUsersInput,
+  ): Promise<GetUsersPaginator> {
     try {
       const { fullname, role, isDeleted, limit = 10, skip = 0 } = getUserInput;
-      const query: any = {isDeleted: false};
-      if(isDeleted){
+      const query: any = { isDeleted: false };
+      if (isDeleted) {
         query.isDeleted = isDeleted;
       }
-      if(role){
+      if (role) {
         query.role = role;
       }
 
@@ -145,7 +151,6 @@ export class UserService {
         sort: { fullname: -1 },
         select: 'fullname email role photo is_completed',
       });
-
     } catch (error) {
       this.logger.error('Error getting users:', error);
       return {
@@ -160,6 +165,129 @@ export class UserService {
           nextPage: null,
           prevPage: null,
         },
+      };
+    }
+  }
+
+  async getUserById(id: string): Promise<GetUserRes> {
+    try {
+      const user = await this.userRepository.findOneWithPopulate({ _id: id }, [
+        'office',
+      ]);
+      if (!user) {
+        return {
+          user: null,
+          message: 'USER_NOT_FOUND',
+          status: 404,
+        };
+      }
+      return {
+        user,
+        status: 200,
+        message: 'USER_FOUND',
+      };
+    } catch (error) {
+      this.logger.error('Error getting user by id:', error);
+      return {
+        message: 'INTERNAL_SERVER_ERROR',
+        status: 500,
+        user: null,
+      };
+    }
+  }
+
+  async affectDoctorAdminToOffice(
+    affectUserToOfficeInput: AffectUserToOfficeInput,
+  ): Promise<GetUserRes> {
+    try {
+      const { userId: id, officeId } = affectUserToOfficeInput;
+
+      const foundUser = await this.userRepository.findOne({ _id: id });
+
+      if (!foundUser) {
+        return {
+          user: null,
+          message: 'USER_NOT_FOUND',
+          status: 404,
+        };
+      }
+
+      if (foundUser.role !== ERole.ADMIN_DOCTOR) {
+        return {
+          user: null,
+          message: 'USER_IS_NOT_ADMIN_DOCTOR',
+          status: 400,
+        };
+      }
+
+      const foundOffice = await this.officeRepository.findOne({
+        _id: officeId,
+      });
+
+      if (!foundOffice) {
+        return {
+          user: null,
+          message: 'OFFICE_NOT_FOUND',
+          status: 404,
+        };
+      }
+
+      const updatedUser = await this.userRepository.findOneAndUpdate(
+        { _id: id },
+        { office: new Types.ObjectId(officeId) },
+      );
+
+      return {
+        user: updatedUser,
+        status: 200,
+        message: 'USER_AFFECTED_TO_OFFICE_SUCCESSFULLY',
+      };
+    } catch (error) {
+      this.logger.error('Error getting user by office affection:', error);
+      return {
+        message: 'INTERNAL_SERVER_ERROR',
+        status: 500,
+        user: null,
+      };
+    }
+  }
+
+  async removeDoctorAdminFromOffice(userId: string): Promise<GetUserRes> {
+    try {
+      const foundUser = await this.userRepository.findOne({ _id: userId });
+
+      if (!foundUser) {
+        return {
+          user: null,
+          message: 'USER_NOT_FOUND',
+          status: 404,
+        };
+      }
+
+      if (foundUser.role !== ERole.ADMIN_DOCTOR) {
+        return {
+          user: null,
+          message: 'USER_IS_NOT_ADMIN_DOCTOR',
+          status: 400,
+        };
+      }
+
+      const updatedUser = await this.userRepository.findOneAndUpdate(
+        { _id: userId },
+        { $unset: { office: 1 } },
+      );
+
+      return {
+        user: updatedUser,
+        status: 200,
+        message: 'USER_REMOVED_FROM_OFFICE_SUCCESSFULLY',
+      };
+    } catch (error) {
+      this.logger.error('Error getting user by office removal:', error);
+      return {
+        message: 'INTERNAL_SERVER_ERROR',
+        status: 500,
+        user: null,
       };
     }
   }
