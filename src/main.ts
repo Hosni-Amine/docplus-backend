@@ -13,8 +13,9 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
-      'http://localhost:3000',// local dev
-      'https://docplusfront-git-dev-docplus-projects.vercel.app/',// deployed frontend
+      process.env.NODE_ENV === 'development'
+        ? process.env.PROD_FRONTEND_URL
+        : process.env.PROD_FRONTEND_URL,
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
