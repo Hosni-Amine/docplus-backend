@@ -12,11 +12,7 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: [
-      process.env.NODE_ENV === 'development'
-        ? process.env.PROD_FRONTEND_URL
-        : process.env.PROD_FRONTEND_URL,
-    ],
+    origin: [configService.get<string>('FRONTEND_URL')],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
     allowedHeaders: [
