@@ -59,6 +59,26 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     return document as TDocument | null;
   }
 
+  async findOneWithPopulate(
+    filterQuery: FilterQuery<TDocument>,
+    populateFields: string[] = [],
+  ): Promise<TDocument | null> {
+    let query = this.model.findOne(
+      {
+        ...filterQuery,
+      },
+      {},
+      { lean: true },
+    );
+
+    if (populateFields && populateFields.length > 0) {
+      query = query.populate(populateFields);
+    }
+
+    const document = await query;
+    return document as TDocument | null;
+  }
+
   async findOneAndUpdate(
     filterQuery: FilterQuery<TDocument>,
     update: UpdateQuery<TDocument>,
@@ -139,12 +159,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     filterQuery: FilterQuery<TDocument>,
     options: PaginationOptions = {},
   ): Promise<PaginationResult<T>> {
-    const {
-      limit = 10,
-      skip = 0,
-      sort = { createdAt: -1 },
-      select,
-    } = options;
+    const { limit = 10, skip = 0, sort = { createdAt: -1 }, select } = options;
 
     // Count total documents
     const totalCount = await this.model.countDocuments({

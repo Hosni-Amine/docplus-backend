@@ -1,5 +1,7 @@
 import { AbstractDocument, ERole } from '@common';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Types } from 'mongoose';
+import { Office } from '@src/office/entities/office.entity';
 
 @Schema({
   versionKey: false,
@@ -8,7 +10,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
     updatedAt: 'updated_at',
   },
 })
-
 export class User extends AbstractDocument {
   @Prop()
   email?: string;
@@ -39,6 +40,9 @@ export class User extends AbstractDocument {
 
   @Prop()
   address?: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'Office', nullable: true })
+  office?: Office;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

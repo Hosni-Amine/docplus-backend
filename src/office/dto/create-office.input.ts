@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsEnum, IsArray, IsEmail, IsObject, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsArray,
+  IsEmail,
+  IsObject,
+  IsNotEmpty,
+} from 'class-validator';
 import { EOfficeType } from '../entities/office.entity';
 import { AbstractDocument } from '@common/database/abstract.entity';
 

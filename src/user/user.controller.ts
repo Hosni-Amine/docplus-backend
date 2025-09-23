@@ -5,7 +5,7 @@ import {
   Patch,
   UseGuards,
   Post,
-  Res,
+  Param,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard, RolesGuard } from '@src/guards';
@@ -14,9 +14,13 @@ import { User } from './entities/user.entity';
 import { GetUsersPaginator } from './dto/get-users-input';
 import { GetUsersInput } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
-import { UpdateUserInput } from './dto/update.user.input';
-import { Response } from 'express';
+import {
+  AffectUserToOfficeInput,
+  UpdateUserInput,
+} from './dto/update.user.input';
 import { IBaseRes } from '@common/responses.dto';
+import { ERole } from '@common/enums';
+import { Roles } from '@src/decorators/roles.decorator';
 
 export interface GetUserRes extends IBaseRes {
   user: User;
@@ -44,31 +48,21 @@ export class UserController {
     }
   }
 
-  // @UseGuards(AuthGuard, RolesGuard)
-  // @Roles(ERole.ADMIN, ERole.DOCTOR, ERole.SECRETARY)
-  // TODO : ADD ROLES GUARD AFTER TEST
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN, ERole.ADMIN_DOCTOR)
   @Post()
   async createUser(
     @Body() createUserInput: CreateUserInput,
-    @Res() response: Response,
-  ) {
-    const res = await this.userService.createUser(createUserInput);
-    return response.status(res.status).send({
-      ...res,
-    });
+  ): Promise<GetUserRes> {
+    return await this.userService.createUser(createUserInput);
   }
 
   @UseGuards(AuthGuard, RolesGuard)
   @Patch()
   async updateUser(
     @Body() updateUserInput: UpdateUserInput,
-    @Res() response: Response,
-  ) {
-    console.log(updateUserInput);
-    const res = await this.userService.updateUser(updateUserInput);
-    return response.status(res.status).send({
-      ...res,
-    });
+  ): Promise<GetUserRes> {
+    return await this.userService.updateUser(updateUserInput);
   }
 
   @UseGuards(AuthGuard)
@@ -77,5 +71,32 @@ export class UserController {
     @Body() getUsersInput: GetUsersInput,
   ): Promise<GetUsersPaginator> {
     return await this.userService.getUsersWithPagination(getUsersInput);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get(':id')
+  async getUserById(@Param('id') id: string): Promise<GetUserRes> {
+    return await this.userService.getUserById(id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Roles(ERole.ADMIN)
+  @Patch('office-affection')
+  async affectUserToOffice(
+    @Body() affectUserToOfficeInput: AffectUserToOfficeInput,
+  ): Promise<GetUserRes> {
+    return await this.userService.affectDoctorAdminToOffice(
+      affectUserToOfficeInput,
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Roles(ERole.ADMIN)
+  @Patch('office-removal')
+  async removeDoctorAdminFromOffice(
+    @Body() body: { userId: string },
+  ): Promise<GetUserRes> {
+    const { userId } = body;
+    return await this.userService.removeDoctorAdminFromOffice(userId);
   }
 }

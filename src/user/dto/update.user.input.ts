@@ -1,5 +1,4 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsEmail } from 'class-validator';
-import { ERole } from '@common/enums';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { PartialType } from '@nestjs/swagger';
 import { CreateUserInput } from './create-user.input';
 
@@ -19,4 +18,14 @@ export class UpdateUserInput extends PartialType(CreateUserInput) {
   @IsOptional()
   @IsBoolean()
   isDeleted?: boolean;
+}
+
+export class AffectUserToOfficeInput {
+  @IsNotEmpty()
+  @IsString()
+  userId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  officeId: string;
 }
