@@ -1,4 +1,4 @@
-import { AbstractDocument } from '@common';
+import { AbstractDocument } from '../../common';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 export enum EOfficeType {

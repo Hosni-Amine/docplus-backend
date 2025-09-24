@@ -1,7 +1,7 @@
-import { AbstractDocument, ERole } from '@common';
+import { AbstractDocument, ERole } from '../../common';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { Office } from '@src/office/entities/office.entity';
+import { Office } from '../../office/entities/office.entity';
 
 @Schema({
   versionKey: false,

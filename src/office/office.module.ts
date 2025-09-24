@@ -4,7 +4,7 @@ import { OfficeController } from './office.controller';
 import { OfficeService } from './office.service';
 import { OfficeRepository } from './office.repository';
 import { Office, OfficeSchema } from './entities/office.entity';
-import { DatabaseModule } from '@common/database/database.module';
+import { DatabaseModule } from '../common/database/database.module';
 
 @Module({
   imports: [

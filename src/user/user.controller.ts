@@ -8,8 +8,8 @@ import {
   Param,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { AuthGuard, RolesGuard } from '@src/guards';
-import { CurrentUser } from '@src/decorators';
+import { AuthGuard, RolesGuard } from '../guards';
+import { CurrentUser } from '../decorators';
 import { User } from './entities/user.entity';
 import { GetUsersPaginator } from './dto/get-users-input';
 import { GetUsersInput } from './dto/get-users-input';
@@ -18,9 +18,9 @@ import {
   AffectUserToOfficeInput,
   UpdateUserInput,
 } from './dto/update.user.input';
-import { IBaseRes } from '@common/responses.dto';
-import { ERole } from '@common/enums';
-import { Roles } from '@src/decorators/roles.decorator';
+import { IBaseRes } from '../common/responses.dto';
+import { ERole } from '../common/enums';
+import { Roles } from '../decorators/roles.decorator';
 
 export interface GetUserRes extends IBaseRes {
   user: User;

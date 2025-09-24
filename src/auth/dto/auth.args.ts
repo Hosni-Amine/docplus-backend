@@ -1,6 +1,6 @@
-import { User } from '@src/user/entities/user.entity';
+import { User } from '../../user/entities/user.entity';
 import { IsEmail, IsNotEmpty, Length, IsString } from 'class-validator';
-import { IBaseRes } from '@common/responses.dto';
+import { IBaseRes } from '../../common/responses.dto';
 
 export class RequestOtpReqInput {
   @IsNotEmpty()

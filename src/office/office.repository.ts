@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AbstractRepository } from '@common';
+import { AbstractRepository } from '../common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Connection } from 'mongoose';
 import { Office } from './entities/office.entity';

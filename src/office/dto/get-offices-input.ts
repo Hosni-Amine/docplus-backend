@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
 import { EOfficeType, Office } from '../entities/office.entity';
-import { PaginatorInfo } from '@common/responses.dto';
+import { PaginatorInfo } from '../../common/responses.dto';
 
 export class GetOfficesInput {
   @IsOptional()

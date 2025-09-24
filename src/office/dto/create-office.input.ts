@@ -8,7 +8,7 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { EOfficeType } from '../entities/office.entity';
-import { AbstractDocument } from '@common/database/abstract.entity';
+import { AbstractDocument } from '../../common/database/abstract.entity';
 
 export class CreateOfficeInput extends AbstractDocument {
   @IsString()

@@ -3,10 +3,10 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserSchema, User } from './entities/user.entity';
-import { DatabaseModule } from '@common/database/database.module';
+import { DatabaseModule } from '../common/database/database.module';
 import { UserRepository } from './user.repository';
-import { Office, OfficeSchema } from '@src/office/entities/office.entity';
-import { OfficeRepository } from '@src/office/office.repository';
+import { Office, OfficeSchema } from '../office/entities/office.entity';
+import { OfficeRepository } from '../office/office.repository';
 
 @Module({
   imports: [

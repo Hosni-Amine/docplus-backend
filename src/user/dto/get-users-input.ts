@@ -1,5 +1,5 @@
-import { ERole, PaginatorInfo } from '@common';
-import { User } from '@src/schemas';
+import { ERole, PaginatorInfo } from '../../common';
+import { User } from '../entities/user.entity';
 import { IsOptional, IsString, IsNumber, IsBoolean } from 'class-validator';
 
 export class GetUsersInput {

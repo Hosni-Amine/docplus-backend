@@ -1,9 +1,9 @@
 import { JwtService } from '@nestjs/jwt';
-import { UserRepository } from '@src/user/user.repository';
+import { UserRepository } from '../user/user.repository';
 import { Injectable, Logger } from '@nestjs/common';
-import { MailingService } from '@src/mailing/mailing.service';
+import { MailingService } from '../mailing/mailing.service';
 import { ConfigService } from '@nestjs/config';
-import { IBaseRes, OtpService } from '@common';
+import { IBaseRes, OtpService } from '../common';
 import {
   RequestOtpReqInput,
   RequestOtpRes,
@@ -11,7 +11,7 @@ import {
   VerifyOtpRes,
 } from './dto/auth.args';
 import { v4 as uuidv4 } from 'uuid';
-import { User } from '@src/user/entities/user.entity';
+import { User } from '../user/entities/user.entity';
 
 export interface GetUserRes extends IBaseRes {
   user: User;

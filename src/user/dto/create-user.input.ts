@@ -1,4 +1,4 @@
-import { ERole } from '@common';
+import { ERole } from '../../common';
 import { IsEmail, IsString, IsOptional, IsNotEmpty } from 'class-validator';
 
 export class CreateUserInput {

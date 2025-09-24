@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ERole, handleFileUpload } from '@common';
+import { ERole, handleFileUpload } from '../common';
 import { GetUsersPaginator } from './dto/get-users-input';
 import { GetUsersInput } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
@@ -7,11 +7,11 @@ import {
   AffectUserToOfficeInput,
   UpdateUserInput,
 } from './dto/update.user.input';
-import { MailingService } from '@src/mailing/mailing.service';
+import { MailingService } from '../mailing/mailing.service';
 import { UserRepository } from './user.repository';
 import { GetUserRes } from './user.controller';
 import { Types } from 'mongoose';
-import { OfficeRepository } from '@src/office/office.repository';
+import { OfficeRepository } from '../office/office.repository';
 
 @Injectable()
 export class UserService {
