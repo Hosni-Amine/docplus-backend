@@ -9,15 +9,19 @@ import { join } from 'path';
 import { DatabaseModule } from './common/database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { MailingModule } from './mailing/mailing.module';
-import { OfficeModule } from './office/office.module';
+import { RequestTypeModule } from './request-type/request-type.module';
+import { RequestModule } from './request/request.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
     DatabaseModule,
     AuthModule,
     UserModule,
-    OfficeModule,
+    RequestTypeModule,
+    RequestModule,
     MailingModule,
+    UploadModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: './.env',
@@ -34,7 +38,7 @@ import { OfficeModule } from './office/office.module';
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
-      exclude: ['/api/(.*)'],
+      exclude: ['/api*'],
     }),
   ],
   exports: [AppModule],

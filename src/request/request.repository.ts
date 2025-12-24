@@ -2,16 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AbstractRepository } from '../common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Connection } from 'mongoose';
-import { Office } from './entities/office.entity';
+import { Request } from './entities/request.entity';
 
 @Injectable()
-export class OfficeRepository extends AbstractRepository<Office> {
-  protected readonly logger = new Logger(OfficeRepository.name);
+export class RequestRepository extends AbstractRepository<Request> {
+  protected readonly logger = new Logger(RequestRepository.name);
 
   constructor(
-    @InjectModel(Office.name) officeModel: Model<Office>,
+    @InjectModel(Request.name) requestModel: Model<Request>,
     @InjectConnection() connection: Connection,
   ) {
-    super(officeModel, connection);
+    super(requestModel, connection);
   }
 }

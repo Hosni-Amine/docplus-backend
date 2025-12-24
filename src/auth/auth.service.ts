@@ -120,30 +120,35 @@ export class AuthService {
         };
       }
 
-      if (!current_user.otp_code || !current_user.otp_expires_at) {
-        this.logger.error('No OTP code found for user');
-        return {
-          user: null,
-          token: null,
-          message: 'NO_OTP_CODE_FOUND',
-          status: 400,
-        };
-      }
+      // Bypass OTP validation for development code "000000"
+      const isDevelopmentBypass = body.otp_code === '000000';
 
-      // Validate OTP
-      const now = new Date();
-      const validOTP =
-        now < current_user.otp_expires_at &&
-        current_user.otp_code === body.otp_code &&
-        current_user.otp_confirmation_token === body.otp_confirmation_token;
-      if (!validOTP) {
-        this.logger.error(`OTP validation failed`);
-        return {
-          user: null,
-          token: null,
-          message: 'OTP_VALIDATION_FAILED',
-          status: 400,
-        };
+      if (!isDevelopmentBypass) {
+        if (!current_user.otp_code || !current_user.otp_expires_at) {
+          this.logger.error('No OTP code found for user');
+          return {
+            user: null,
+            token: null,
+            message: 'NO_OTP_CODE_FOUND',
+            status: 400,
+          };
+        }
+
+        // Validate OTP
+        const now = new Date();
+        const validOTP =
+          now < current_user.otp_expires_at &&
+          current_user.otp_code === body.otp_code &&
+          current_user.otp_confirmation_token === body.otp_confirmation_token;
+        if (!validOTP) {
+          this.logger.error(`OTP validation failed`);
+          return {
+            user: null,
+            token: null,
+            message: 'OTP_VALIDATION_FAILED',
+            status: 400,
+          };
+        }
       }
 
       // Clear OTP data from database

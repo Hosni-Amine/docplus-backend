@@ -1,22 +1,14 @@
 export enum ERole {
-  DOCTOR = 'DOCTOR',
-  ADMIN_DOCTOR = 'ADMIN_DOCTOR',
-  PATIENT = 'PATIENT',
-  SECRETARY = 'SECRETARY',
+  DEMANDEUR = 'DEMANDEUR',
+  VALIDATEUR = 'VALIDATEUR',
   ADMIN = 'ADMIN',
 }
 
-export enum EBillingStatus {
-  PAID = 'PAID',
-  PARTIALLY_PAID = 'PARTIALLY_PAID',
-  OVERDUE = 'OVERDUE',
-  REFUNDED = 'REFUNDED',
+export enum ERequestStatus {
+  DRAFT = 'DRAFT',
   CANCELED = 'CANCELED',
-}
-
-export enum EAppointmentStatus {
   PENDING = 'PENDING',
-  FULLFILLED = 'FULLFILLED',
-  DONE = 'DONE',
-  CANCELED = 'CANCELED',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  COMPLETED = 'COMPLETED',
 }

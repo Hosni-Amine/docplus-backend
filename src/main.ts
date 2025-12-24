@@ -2,13 +2,22 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
   const configService = new ConfigService();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads',
+  });
 
   app.setGlobalPrefix('/api', {
-    exclude: [{ path: '*', method: RequestMethod.ALL }],
+    exclude: [
+      { path: 'uploads', method: RequestMethod.ALL },
+      { path: 'uploads/(.*)', method: RequestMethod.ALL },
+    ],
   });
 
   app.enableCors({

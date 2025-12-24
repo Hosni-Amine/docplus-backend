@@ -8,6 +8,7 @@ const customHandlebars = Handlebars.create();
 export enum MailTemplate {
   WelcomeEmail = 'welcome-email.hbs',
   OtpCodeEmail = 'otp-code-email.hbs',
+  RequestCreated = 'request-created.hbs',
 }
 
 @Injectable()
@@ -143,6 +144,40 @@ export class MailingService {
       return true;
     } catch (error) {
       this.logger.error('Failed to send OTP code email:', error);
+      return false;
+    }
+  }
+
+  async sendRequestCreatedNotification(
+    email: string,
+    validatorName: string,
+    requestData: {
+      reference: string;
+      title: string;
+      demandeurName: string;
+      requestTypeName: string;
+      createdAt: string;
+      requestUrl: string;
+    },
+  ): Promise<boolean> {
+    try {
+      await this.sendMail({
+        templatePath: MailTemplate.RequestCreated,
+        context: {
+          validatorName,
+          reference: requestData.reference,
+          title: requestData.title,
+          demandeurName: requestData.demandeurName,
+          requestTypeName: requestData.requestTypeName,
+          createdAt: requestData.createdAt,
+          requestUrl: requestData.requestUrl,
+        },
+        to: email,
+        subject: `Nouvelle demande - ${requestData.reference}`,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to send request created notification:', error);
       return false;
     }
   }

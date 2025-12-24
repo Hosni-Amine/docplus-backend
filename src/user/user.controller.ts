@@ -14,16 +14,17 @@ import { User } from './entities/user.entity';
 import { GetUsersPaginator } from './dto/get-users-input';
 import { GetUsersInput } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
-import {
-  AffectUserToOfficeInput,
-  UpdateUserInput,
-} from './dto/update.user.input';
+import { UpdateUserInput } from './dto/update.user.input';
 import { IBaseRes } from '../common/responses.dto';
 import { ERole } from '../common/enums';
 import { Roles } from '../decorators/roles.decorator';
 
 export interface GetUserRes extends IBaseRes {
   user: User;
+}
+
+export interface GetAllUsersRes extends IBaseRes {
+  users: User[];
 }
 
 @Controller('user')
@@ -49,7 +50,7 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(ERole.ADMIN, ERole.ADMIN_DOCTOR)
+  @Roles(ERole.ADMIN)
   @Post()
   async createUser(
     @Body() createUserInput: CreateUserInput,
@@ -57,7 +58,7 @@ export class UserController {
     return await this.userService.createUser(createUserInput);
   }
 
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @Patch()
   async updateUser(
     @Body() updateUserInput: UpdateUserInput,
@@ -66,11 +67,17 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard)
-  @Get('with-pagination')
+  @Post('with-pagination')
   async getUsersWithPagination(
     @Body() getUsersInput: GetUsersInput,
   ): Promise<GetUsersPaginator> {
     return await this.userService.getUsersWithPagination(getUsersInput);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get()
+  async getAllUsers(): Promise<GetAllUsersRes> {
+    return await this.userService.getAllUsers();
   }
 
   @UseGuards(AuthGuard)
@@ -79,24 +86,13 @@ export class UserController {
     return await this.userService.getUserById(id);
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(ERole.ADMIN)
-  @Patch('office-affection')
-  async affectUserToOffice(
-    @Body() affectUserToOfficeInput: AffectUserToOfficeInput,
-  ): Promise<GetUserRes> {
-    return await this.userService.affectDoctorAdminToOffice(
-      affectUserToOfficeInput,
-    );
-  }
-
-  @UseGuards(AuthGuard)
-  @Roles(ERole.ADMIN)
-  @Patch('office-removal')
-  async removeDoctorAdminFromOffice(
-    @Body() body: { userId: string },
-  ): Promise<GetUserRes> {
-    const { userId } = body;
-    return await this.userService.removeDoctorAdminFromOffice(userId);
+  @Patch('delete/:id')
+  async deleteUser(@Param('id') id: string): Promise<GetUserRes> {
+    return await this.userService.updateUser({
+      id,
+      isDeleted: true,
+    });
   }
 }

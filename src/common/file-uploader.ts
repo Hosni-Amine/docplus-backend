@@ -21,7 +21,6 @@ export async function handleFileUpload(
     // Return the URL/path that will be stored in the database
     return filePath;
   } catch (error) {
-    this.logger.error(`File upload failed: ${error.message}`);
-    throw new Error('File upload failed');
+    throw new Error(`File upload failed: ${error.message}`);
   }
 }
