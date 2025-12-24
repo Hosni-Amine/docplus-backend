@@ -9,6 +9,7 @@ export enum MailTemplate {
   WelcomeEmail = 'welcome-email.hbs',
   OtpCodeEmail = 'otp-code-email.hbs',
   RequestCreated = 'request-created.hbs',
+  RequestCompleted = 'request-completed.hbs',
 }
 
 @Injectable()
@@ -178,6 +179,44 @@ export class MailingService {
       return true;
     } catch (error) {
       this.logger.error('Failed to send request created notification:', error);
+      return false;
+    }
+  }
+
+  async sendRequestCompletedNotification(
+    email: string,
+    fullname: string,
+    requestData: {
+      reference: string;
+      title: string;
+      requestTypeName: string;
+      completedAt: string;
+      requestUrl: string;
+    },
+  ): Promise<boolean> {
+    try {
+      await this.sendMail({
+        templatePath: MailTemplate.RequestCompleted,
+        context: {
+          fullname,
+          reference: requestData.reference,
+          title: requestData.title,
+          requestTypeName: requestData.requestTypeName,
+          completedAt: requestData.completedAt,
+          requestUrl: requestData.requestUrl,
+        },
+        to: email,
+        subject: `Votre demande est terminée - ${requestData.reference}`,
+      });
+      this.logger.log(
+        'Request completed notification email sent successfully to: ' + email,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        'Failed to send request completed notification email:',
+        error,
+      );
       return false;
     }
   }

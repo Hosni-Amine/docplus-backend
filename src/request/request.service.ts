@@ -165,6 +165,11 @@ export class RequestService {
         };
       }
 
+      // Check if status is changing to COMPLETED
+      const isStatusChangingToCompleted =
+        rest.status === ERequestStatus.COMPLETED &&
+        existingRequest.status !== ERequestStatus.COMPLETED;
+
       // Convert requestTypeId to ObjectId if provided
       const updateData: any = { ...rest };
       if (rest.requestTypeId) {
@@ -180,6 +185,62 @@ export class RequestService {
       this.logger.log(
         `Request ${updatedRequest.reference} updated successfully`,
       );
+
+      // Send email notification if status changed to COMPLETED
+      if (isStatusChangingToCompleted) {
+        try {
+          const populatedRequest =
+            await this.requestRepository.findOneWithPopulate(
+              { _id: updatedRequest._id },
+              ['requestTypeId', 'createdBy'],
+            );
+
+          if (populatedRequest) {
+            const createdBy = populatedRequest.createdBy as any;
+            const requestType = populatedRequest.requestTypeId as any;
+
+            if (createdBy && createdBy.email) {
+              const frontendUrl = this.configService.get<string>(
+                'FRONTEND_URL',
+                'http://localhost:3000',
+              );
+              const requestUrl = `${frontendUrl}/apps/demandes/view?id=${updatedRequest._id}`;
+
+              const requestTypeName =
+                requestType?.name || 'Type de demande inconnu';
+              const completedAt = new Date().toLocaleDateString('fr-FR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              });
+
+              await this.mailingService.sendRequestCompletedNotification(
+                createdBy.email,
+                createdBy.fullname || createdBy.email,
+                {
+                  reference: updatedRequest.reference,
+                  title: updatedRequest.title,
+                  requestTypeName,
+                  completedAt,
+                  requestUrl,
+                },
+              );
+
+              this.logger.log(
+                `Sent request completed notification to ${createdBy.email}`,
+              );
+            }
+          }
+        } catch (error) {
+          // Log error but don't fail the request update
+          this.logger.error(
+            'Error sending request completed notification:',
+            error,
+          );
+        }
+      }
 
       return {
         request: updatedRequest,
