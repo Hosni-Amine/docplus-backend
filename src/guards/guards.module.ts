@@ -12,6 +12,6 @@ import { AuthGuard, RolesGuard } from './auth.guard';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   providers: [UserRepository, AuthGuard, RolesGuard],
-  exports: [AuthGuard, RolesGuard],
+  exports: [UserRepository, AuthGuard, RolesGuard],
 })
 export class GuardsModule {}

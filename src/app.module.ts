@@ -9,8 +9,6 @@ import { join } from 'path';
 import { DatabaseModule } from './common/database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { MailingModule } from './mailing/mailing.module';
-import { RequestTypeModule } from './request-type/request-type.module';
-import { RequestModule } from './request/request.module';
 import { UploadModule } from './upload/upload.module';
 import { GuardsModule } from './guards/guards.module';
 import { JwtSignOptions } from '@nestjs/jwt';
@@ -21,8 +19,6 @@ import { JwtSignOptions } from '@nestjs/jwt';
     GuardsModule,
     AuthModule,
     UserModule,
-    RequestTypeModule,
-    RequestModule,
     MailingModule,
     UploadModule,
     ConfigModule.forRoot({
