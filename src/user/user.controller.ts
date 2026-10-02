@@ -50,7 +50,7 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(ERole.ADMIN)
+  @Roles(ERole.SUPER_ADMIN, ERole.ADMIN)
   @Post()
   async createUser(
     @Body() createUserInput: CreateUserInput,
@@ -62,8 +62,9 @@ export class UserController {
   @Patch()
   async updateUser(
     @Body() updateUserInput: UpdateUserInput,
+    @CurrentUser() user: User,
   ): Promise<GetUserRes> {
-    return await this.userService.updateUser(updateUserInput);
+    return await this.userService.updateUser(updateUserInput, user);
   }
 
   @UseGuards(AuthGuard)
@@ -87,12 +88,18 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(ERole.ADMIN)
+  @Roles(ERole.SUPER_ADMIN, ERole.ADMIN)
   @Patch('delete/:id')
-  async deleteUser(@Param('id') id: string): Promise<GetUserRes> {
-    return await this.userService.updateUser({
-      id,
-      isDeleted: true,
-    });
+  async deleteUser(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ): Promise<GetUserRes> {
+    return await this.userService.updateUser(
+      {
+        id,
+        isDeleted: true,
+      },
+      user,
+    );
   }
 }

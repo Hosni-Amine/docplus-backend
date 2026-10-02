@@ -1,14 +1,5 @@
 export enum ERole {
-  DEMANDEUR = 'DEMANDEUR',
-  VALIDATEUR = 'VALIDATEUR',
+  SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
-}
-
-export enum ERequestStatus {
-  DRAFT = 'DRAFT',
-  CANCELED = 'CANCELED',
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  COMPLETED = 'COMPLETED',
+  USER = 'USER',
 }

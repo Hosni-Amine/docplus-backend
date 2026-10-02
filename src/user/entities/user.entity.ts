@@ -36,6 +36,17 @@ export class User extends AbstractDocument {
   @Prop({ nullable: true })
   otp_confirmation_token?: string;
 
+  @Prop({ default: 0 })
+  otp_attempts?: number;
+
+  /**
+   * Copied into the JWT at login. Increased on logout, email change,
+   * role change, block, or delete. The guard rejects the token when
+   * this no longer matches the value inside it.
+   */
+  @Prop({ default: 0 })
+  tokenVersion?: number;
+
   @Prop()
   address?: string;
 }

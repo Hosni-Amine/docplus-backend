@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -6,7 +7,7 @@ export class OtpService {
    * Generate a 6-digit OTP code
    */
   generateOtpCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return randomInt(0, 1_000_000).toString().padStart(6, '0');
   }
 
   /**

@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { AbstractDocument } from './abstract.entity';
 import {
+  ClientSession,
   Connection,
   FilterQuery,
   Model,
@@ -48,13 +49,14 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
 
   async findOne(
     filterQuery: FilterQuery<TDocument>,
+    options?: { session?: ClientSession },
   ): Promise<TDocument | null> {
     const document = await this.model.findOne(
       {
         ...filterQuery,
       },
       {},
-      { lean: true },
+      { lean: true, session: options?.session },
     );
     return document as TDocument | null;
   }
@@ -82,6 +84,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
   async findOneAndUpdate(
     filterQuery: FilterQuery<TDocument>,
     update: UpdateQuery<TDocument>,
+    options?: { session?: ClientSession },
   ): Promise<TDocument | undefined> {
     const document = await this.model.findOneAndUpdate(
       {
@@ -91,6 +94,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
       {
         lean: true,
         new: true,
+        session: options?.session,
       },
     );
 

@@ -20,7 +20,7 @@ export async function handleFileUpload(
     await fs.promises.writeFile(filePath, file.buffer, { flag: 'w' });
     // Return the URL/path that will be stored in the database
     return filePath;
-  } catch (error) {
-    throw new Error(`File upload failed: ${error.message}`);
+  } catch (error: any) {
+    throw new Error(`File upload failed: ${error.message || 'Unknown error'}`);
   }
 }
