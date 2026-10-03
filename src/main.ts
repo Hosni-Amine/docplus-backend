@@ -23,7 +23,7 @@ async function bootstrap() {
   const isDevelopment = configService.get('NODE_ENV') === 'development';
   const corsOrigin = isDevelopment
     ? true
-    : configService.get<string>('CORS_ORIGIN')?.trim() || false;
+    : configService.get<string>('FRONTEND_URL')?.trim() || false;
 
   app.enableCors({
     origin: corsOrigin,
