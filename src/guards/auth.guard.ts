@@ -51,7 +51,7 @@ export class AuthGuard implements CanActivate {
         this.logger.error('Token has been revoked');
         return false;
       }
-      request.user = user;
+      request.user = { id: user._id.toString(), ...user };
     } catch (err: any) {
       this.logger.error(err.message || 'Invalid token');
       return false;
