@@ -10,7 +10,7 @@ import { Request } from 'express';
 import { Reflector } from '@nestjs/core';
 import { ERole } from '../common';
 import { UserRepository } from '../user/user.repository';
-import { toPublicUser } from '../user/public-user';
+import { tokenUserFields } from '../user/user.fields';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -39,7 +39,10 @@ export class AuthGuard implements CanActivate {
         secret: this.config.getOrThrow('JWT_SECRET'),
         algorithms: ['HS256'],
       });
-      const user = await this.userRepository.findOne({ _id: payload.id });
+      const user = await this.userRepository.findOne(
+        { _id: payload.id },
+        { select: tokenUserFields },
+      );
       if (!user || user.isBlocked || user.isDeleted) {
         this.logger.error('User is missing, blocked, or deleted');
         return false;
@@ -48,11 +51,7 @@ export class AuthGuard implements CanActivate {
         this.logger.error('Token has been revoked');
         return false;
       }
-      request.user = {
-        ...toPublicUser(user),
-        id: user._id.toString(),
-        role: user.role,
-      };
+      request.user = user;
     } catch (err: any) {
       this.logger.error(err.message || 'Invalid token');
       return false;

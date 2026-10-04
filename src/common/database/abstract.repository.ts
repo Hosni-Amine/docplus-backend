@@ -49,13 +49,13 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
 
   async findOne(
     filterQuery: FilterQuery<TDocument>,
-    options?: { session?: ClientSession },
+    options?: { session?: ClientSession; select?: ProjectionType<TDocument> },
   ): Promise<TDocument | null> {
     const document = await this.model.findOne(
       {
         ...filterQuery,
       },
-      {},
+      options?.select ?? {},
       { lean: true, session: options?.session },
     );
     return document as TDocument | null;
@@ -124,12 +124,15 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     return result as TDocument | undefined;
   }
 
-  async find(filterQuery: FilterQuery<TDocument>): Promise<TDocument[]> {
+  async find(
+    filterQuery: FilterQuery<TDocument>,
+    projection?: ProjectionType<TDocument>,
+  ): Promise<TDocument[]> {
     const results = await this.model.find(
       {
         ...filterQuery,
       },
-      {},
+      projection ?? {},
       { lean: true },
     );
     return results as TDocument[];

@@ -6,8 +6,8 @@ import { UpdateUserInput } from './dto/update.user.input';
 import { MailingService } from '../mailing/mailing.service';
 import { UserRepository } from './user.repository';
 import { GetAllUsersRes, GetUserRes } from './user.controller';
-import { toPublicUser } from './public-user';
 import { User } from './entities/user.entity';
+import { publicUserFields } from './user.fields';
 
 type Actor = {
   id?: string;
@@ -145,7 +145,7 @@ export class UserService {
         limit,
         skip,
         sort: { fullname: -1 },
-        select: 'fullname email role photo phone address',
+        select: publicUserFields,
       });
     } catch (error) {
       this.logger.error('Error getting users:', error);
@@ -158,9 +158,12 @@ export class UserService {
    */
   async getAllUsers(): Promise<GetAllUsersRes> {
     try {
-      const users = await this.userRepository.find({ isDeleted: false });
+      const users = await this.userRepository.find(
+        { isDeleted: false },
+        publicUserFields,
+      );
       return {
-        users: users.map((user) => toPublicUser(user)),
+        users,
         status: 200,
         message: 'USERS_FOUND_SUCCESSFULLY',
       };
@@ -179,7 +182,10 @@ export class UserService {
    */
   async getUserById(id: string): Promise<GetUserRes> {
     try {
-      const user = await this.userRepository.findOne({ _id: id });
+      const user = await this.userRepository.findOne(
+        { _id: id },
+        { select: publicUserFields },
+      );
       if (!user) {
         return this.result(404, 'USER_NOT_FOUND');
       }
@@ -212,7 +218,7 @@ export class UserService {
     return {
       status,
       message,
-      user: toPublicUser(user ?? null),
+      user,
     };
   }
 }
