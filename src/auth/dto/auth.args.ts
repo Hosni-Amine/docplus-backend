@@ -1,4 +1,3 @@
-import { User } from '../../user/entities/user.entity';
 import { IsEmail, IsNotEmpty, Length, IsString } from 'class-validator';
 import { IBaseRes } from '../../common/responses.dto';
 
@@ -29,6 +28,5 @@ export interface RequestOtpRes extends IBaseRes {
 }
 
 export interface VerifyOtpRes extends IBaseRes {
-  user: User;
-  token: string;
+  token?: string;
 }

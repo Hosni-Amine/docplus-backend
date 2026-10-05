@@ -6,8 +6,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
 async function bootstrap() {
-  const configService = new ConfigService();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const configService = app.get(ConfigService);
 
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads',
@@ -20,8 +20,13 @@ async function bootstrap() {
     ],
   });
 
+  const isDevelopment = configService.get('NODE_ENV') === 'development';
+  const corsOrigin = isDevelopment
+    ? true
+    : configService.get<string>('FRONTEND_URL')?.trim() || false;
+
   app.enableCors({
-    origin: true, // Allow all origins
+    origin: corsOrigin,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
     allowedHeaders: [

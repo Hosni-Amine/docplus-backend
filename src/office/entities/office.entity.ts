@@ -8,15 +8,18 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
     updatedAt: 'updated_at',
   },
 })
-export class RequestType extends AbstractDocument {
+export class Office extends AbstractDocument {
   @Prop({ required: true })
   name: string;
 
   @Prop()
-  description?: string;
+  phone?: string;
 
   @Prop()
-  steps?: string;
+  address?: string;
+
+  @Prop()
+  email?: string;
 }
 
-export const RequestTypeSchema = SchemaFactory.createForClass(RequestType);
+export const OfficeSchema = SchemaFactory.createForClass(Office);

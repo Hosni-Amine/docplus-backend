@@ -102,8 +102,8 @@ export class MailingService {
             mailOptions.subject,
         );
       }
-    } catch (e) {
-      this.logger.error(e.message);
+    } catch (e: any) {
+      this.logger.error(e.message || 'Failed to send email');
     }
   }
 

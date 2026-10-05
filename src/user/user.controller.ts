@@ -50,20 +50,31 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.SUPER_ADMIN)
+  @Post('create-admin')
+  async createAdminSuperAdmin(
+    @Body() createUserInput: CreateUserInput,
+  ): Promise<IBaseRes> {
+    return await this.userService.createAdminSuperAdmin(createUserInput);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(ERole.ADMIN)
-  @Post()
+  @Post('create-user')
   async createUser(
     @Body() createUserInput: CreateUserInput,
-  ): Promise<GetUserRes> {
-    return await this.userService.createUser(createUserInput);
+    @CurrentUser() user: User,
+  ): Promise<IBaseRes> {
+    return await this.userService.createUser(createUserInput, user);
   }
 
   @UseGuards(AuthGuard)
   @Patch()
   async updateUser(
     @Body() updateUserInput: UpdateUserInput,
-  ): Promise<GetUserRes> {
-    return await this.userService.updateUser(updateUserInput);
+    @CurrentUser() user: User,
+  ): Promise<IBaseRes> {
+    return await this.userService.updateUser(updateUserInput, user);
   }
 
   @UseGuards(AuthGuard)
@@ -87,12 +98,9 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(ERole.ADMIN)
+  @Roles(ERole.SUPER_ADMIN, ERole.ADMIN)
   @Patch('delete/:id')
-  async deleteUser(@Param('id') id: string): Promise<GetUserRes> {
-    return await this.userService.updateUser({
-      id,
-      isDeleted: true,
-    });
+  async deleteUser(@Param('id') id: string): Promise<IBaseRes> {
+    return await this.userService.deleteUser(id);
   }
 }

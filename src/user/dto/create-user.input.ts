@@ -1,5 +1,11 @@
+import {
+  IsEmail,
+  IsMongoId,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { ERole } from '../../common';
-import { IsEmail, IsString, IsOptional, IsNotEmpty } from 'class-validator';
 
 export class CreateUserInput {
   @IsEmail()
@@ -10,15 +16,15 @@ export class CreateUserInput {
   @IsOptional()
   phone?: string;
 
-  @IsString()
-  @IsOptional()
-  fullname?: string;
-
   @IsOptional()
   @IsString()
   address?: string;
 
   @IsNotEmpty()
   @IsString()
-  role?: ERole;
+  role: ERole;
+
+  @IsOptional()
+  @IsMongoId()
+  officeId?: string;
 }

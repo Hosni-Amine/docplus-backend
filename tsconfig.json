@@ -9,24 +9,13 @@
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    "rootDir": "./src",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@app/common": ["src/common/src"],
-      "@app/common/*": ["src/common/src/*"],
-      "@common/*": ["src/common/*"],
-      "@common": ["src/common"],
-      "@src/*": ["src/*"],
-      "@schemas/*": ["src/schemas/*"],
-      "@schemas": ["src/schemas"],
-      "@decorators": ["src/decorators"],
-      "@modules/*": ["src/modules/*"]
-    }
+    "noFallthroughCasesInSwitch": false
   }
 }

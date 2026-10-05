@@ -1,171 +1,286 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ERole, handleFileUpload } from '../common';
-import { GetUsersPaginator } from './dto/get-users-input';
-import { GetUsersInput } from './dto/get-users-input';
+import { Types } from 'mongoose';
+import { ERole, deleteUploadedFile } from '../common';
+import { OfficeRepository } from '../office/office.repository';
+import { GetUsersInput, GetUsersPaginator } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update.user.input';
 import { MailingService } from '../mailing/mailing.service';
 import { UserRepository } from './user.repository';
+import { IBaseRes } from '../common/responses.dto';
 import { GetAllUsersRes, GetUserRes } from './user.controller';
+import { User } from './entities/user.entity';
+import { publicUserFields } from './user.fields';
+
+type Actor = {
+  id?: string;
+  role?: ERole;
+  officeId?: { toString(): string } | string;
+};
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     private readonly mailingService: MailingService,
     private readonly userRepository: UserRepository,
+    private readonly officeRepository: OfficeRepository,
   ) {}
-  private readonly logger = new Logger(UserService.name);
 
-  async createUser(createUserInput: CreateUserInput): Promise<GetUserRes> {
+  /**
+   * Create a admin or super admin and send a welcome email when an address is present.
+   */
+  async createAdminSuperAdmin(
+    createUserInput: CreateUserInput,
+  ): Promise<IBaseRes> {
     try {
-      if (createUserInput.email) {
-        const current_user = await this.userRepository.findOne({
-          email: createUserInput.email,
+      if (
+        createUserInput.email &&
+        (await this.emailTaken(createUserInput.email))
+      ) {
+        this.logger.error(
+          `This mail address ${createUserInput.email} is already existed!`,
+        );
+        return this.result(400, 'EMAIL_ALREADY_EXISTED');
+      }
+
+      const { officeId, role, ...rest } = createUserInput;
+      if (role !== ERole.ADMIN && role !== ERole.SUPER_ADMIN) {
+        return this.result(403, 'FORBIDDEN');
+      }
+      if (role === ERole.ADMIN) {
+        if (!officeId) {
+          return this.result(400, 'OFFICE_REQUIRED');
+        }
+        const office = await this.officeRepository.findOne({
+          _id: officeId,
+          isDeleted: false,
         });
-        if (current_user) {
-          this.logger.error(
-            `This mail address ${createUserInput.email} is already existed!`,
-          );
-          return {
-            user: null,
-            message: `EMAIL_ALREADY_EXISTED`,
-            status: 400,
-          };
+        if (!office) {
+          return this.result(404, 'OFFICE_NOT_FOUND');
         }
       }
-      const { role, ...rest } = createUserInput;
+
       const newUser = await this.userRepository.create({
         ...rest,
+        isPublic: false,
         isBlocked: false,
-        role: role as ERole,
+        role,
+        officeId:
+          role === ERole.SUPER_ADMIN ? undefined : new Types.ObjectId(officeId),
       });
 
       if (newUser.email) {
         await this.mailingService.sendWelcomeEmail(
           newUser.email,
-          newUser.fullname,
+          newUser.firstName || newUser.email,
         );
       }
 
-      return {
-        user: newUser,
-        status: 201,
-        message: 'USER_CREATED_SUCCESSFULLY',
-      };
+      return { status: 201, message: 'USER_CREATED_SUCCESSFULLY' };
     } catch (error) {
       this.logger.error(error);
-      return {
-        message: 'INTERNAL_SERVER_ERROR',
-        status: 500,
-        user: null,
-      };
+      return this.result(500, 'INTERNAL_SERVER_ERROR');
     }
   }
 
+  /**
+   * Create a USER in an office.
+   * Admin passes officeId. Office admin uses their own office.
+   */
+  async createUser(
+    createUserInput: CreateUserInput,
+    actor: Actor,
+  ): Promise<IBaseRes> {
+    try {
+      if (
+        createUserInput.email &&
+        (await this.emailTaken(createUserInput.email))
+      ) {
+        this.logger.error(
+          `This mail address ${createUserInput.email} is already existed!`,
+        );
+        return this.result(400, 'EMAIL_ALREADY_EXISTED');
+      }
+
+      const { officeId: requestedOfficeId, role, ...rest } = createUserInput;
+      if (role !== ERole.USER && role !== ERole.ADMIN) {
+        return this.result(403, 'FORBIDDEN');
+      }
+      const officeId =
+        actor.role === ERole.ADMIN
+          ? actor.officeId?.toString()
+          : requestedOfficeId;
+
+      if (!officeId) {
+        return this.result(400, 'OFFICE_REQUIRED');
+      }
+
+      const office = await this.officeRepository.findOne({
+        _id: officeId,
+        isDeleted: false,
+      });
+      if (!office) {
+        return this.result(404, 'OFFICE_NOT_FOUND');
+      }
+
+      const newUser = await this.userRepository.create({
+        ...rest,
+        isPublic: false,
+        isBlocked: false,
+        role,
+        officeId: new Types.ObjectId(officeId),
+      });
+
+      if (newUser.email) {
+        await this.mailingService.sendWelcomeEmail(
+          newUser.email,
+          newUser.firstName || newUser.email,
+        );
+      }
+
+      return { status: 201, message: 'USER_CREATED_SUCCESSFULLY' };
+    } catch (error) {
+      this.logger.error(error);
+      return this.result(500, 'INTERNAL_SERVER_ERROR');
+    }
+  }
+
+  /**
+   * Update a profile. Role, block, and delete changes are admin-only.
+   * Other users can update only their own profile.
+   */
   async updateUser(
     updateUserInput: Partial<UpdateUserInput>,
-  ): Promise<GetUserRes> {
+    actor: Actor,
+  ): Promise<IBaseRes> {
     try {
-      const { id, photo, ...rest } = updateUserInput;
-      // Check if user exists first
+      const { id, role, isBlocked, isDeleted, ...rest } = updateUserInput;
+      const isAdmin =
+        actor?.role === ERole.ADMIN || actor?.role === ERole.SUPER_ADMIN;
+
+      if (!isAdmin && id !== actor?.id) {
+        return this.result(403, 'FORBIDDEN');
+      }
+
       const existingUser = await this.userRepository.findOne({ _id: id });
       if (!existingUser) {
         this.logger.error(`User with ID ${id} not found`);
-        return {
-          user: null,
-          message: 'USER_NOT_FOUND',
-          status: 404,
-        };
+        return this.result(404, 'USER_NOT_FOUND');
       }
-      // Check if email is already in use by another user
-      if (updateUserInput.email) {
-        const userWithUsedEmail = await this.userRepository.findOne({
-          email: updateUserInput.email,
-          _id: { $ne: id },
-        });
-        if (userWithUsedEmail) {
-          this.logger.error(
-            `This mail address ${updateUserInput.email} is already in use`,
-          );
-          return {
-            user: null,
-            message: `EMAIL_ALREADY_IN_USE`,
-            status: 400,
-          };
-        }
-      }
-      // Handle photo upload if provided
-      if (photo) {
-        const imagePath = await handleFileUpload(photo, 'patients');
-        rest['photo'] = imagePath;
-      }
-      // Update the user
-      const updatedUser = await this.userRepository.findOneAndUpdate(
-        { _id: id },
-        {
-          ...rest,
-        },
-      );
 
-      return {
-        user: updatedUser,
-        status: 200,
-        message: 'USER_UPDATED_SUCCESSFULLY',
-      };
+      if (rest.email && (await this.emailTaken(rest.email, id))) {
+        this.logger.error(`This mail address ${rest.email} is already in use`);
+        return this.result(400, 'EMAIL_ALREADY_IN_USE');
+      }
+
+      const updates: Partial<User> = { ...rest };
+
+      if (isAdmin) {
+        if (role) updates.role = role as ERole;
+        if (typeof isBlocked === 'boolean') updates.isBlocked = isBlocked;
+        if (typeof isDeleted === 'boolean') updates.isDeleted = isDeleted;
+      }
+
+      const accessChanged =
+        (updates.email !== undefined && updates.email !== existingUser.email) ||
+        (updates.role !== undefined && updates.role !== existingUser.role) ||
+        updates.isBlocked === true ||
+        updates.isDeleted === true;
+
+      if (accessChanged) {
+        updates.tokenVersion = (existingUser.tokenVersion ?? 0) + 1;
+      }
+
+      if (
+        updates.avatarUrl &&
+        existingUser.avatarUrl &&
+        updates.avatarUrl !== existingUser.avatarUrl
+      ) {
+        await deleteUploadedFile([existingUser.avatarUrl]);
+      }
+
+      await this.userRepository.findOneAndUpdate({ _id: id }, updates);
+
+      return { status: 200, message: 'USER_UPDATED_SUCCESSFULLY' };
     } catch (error) {
       this.logger.error(error);
-      return {
-        message: 'INTERNAL_SERVER_ERROR',
-        status: 500,
-        user: null,
-      };
+      return this.result(500, 'INTERNAL_SERVER_ERROR');
     }
   }
 
+  /**
+   * Soft-delete a user. The route is already limited to admins.
+   */
+  async deleteUser(id: string): Promise<IBaseRes> {
+    try {
+      const existingUser = await this.userRepository.findOne({ _id: id });
+      if (!existingUser) {
+        this.logger.error(`User with ID ${id} not found`);
+        return this.result(404, 'USER_NOT_FOUND');
+      }
+
+      await this.userRepository.findOneAndUpdate(
+        { _id: id },
+        {
+          isDeleted: true,
+          tokenVersion: (existingUser.tokenVersion ?? 0) + 1,
+        },
+      );
+
+      return { status: 200, message: 'USER_UPDATED_SUCCESSFULLY' };
+    } catch (error) {
+      this.logger.error(error);
+      return this.result(500, 'INTERNAL_SERVER_ERROR');
+    }
+  }
+
+  /**
+   * Return a page of users matching the given filters.
+   */
   async getUsersWithPagination(
     getUserInput: GetUsersInput,
   ): Promise<GetUsersPaginator> {
     try {
-      const { fullname, role, isDeleted, limit = 10, skip = 0 } = getUserInput;
-      const query: any = { isDeleted: false };
-      if (isDeleted) {
-        query.isDeleted = isDeleted;
-      }
+      const { name, role, isDeleted, limit = 10, skip = 0 } = getUserInput;
+      const query: Record<string, unknown> = {
+        isDeleted: isDeleted || false,
+      };
+
       if (role) {
         query.role = role;
       }
-
-      if (fullname) {
-        query.fullname = { $regex: fullname, $options: 'i' };
+      if (name) {
+        const nameRegex = { $regex: name, $options: 'i' };
+        query.$or = [
+          { firstName: nameRegex },
+          { lastName: nameRegex },
+          { midNames: nameRegex },
+        ];
       }
 
       return await this.userRepository.getWithPagination(query, {
         limit,
         skip,
-        sort: { fullname: -1 },
-        select: 'fullname email role photo phone address',
+        sort: { lastName: -1, firstName: -1 },
+        select: publicUserFields,
       });
     } catch (error) {
       this.logger.error('Error getting users:', error);
-      return {
-        data: [],
-        paginatorInfo: {
-          count: 0,
-          currentPage: 1,
-          perPage: getUserInput.limit || 10,
-          totalPages: 0,
-          hasNextPage: false,
-          hasPrevPage: false,
-          nextPage: null,
-          prevPage: null,
-        },
-      };
+      return emptyUsersPage(getUserInput.limit || 10);
     }
   }
 
+  /**
+   * Return every user that is not deleted, without OTP fields.
+   */
   async getAllUsers(): Promise<GetAllUsersRes> {
     try {
-      const users = await this.userRepository.find({ isDeleted: false });
+      const users = await this.userRepository.find(
+        { isDeleted: false },
+        publicUserFields,
+      );
       return {
         users,
         status: 200,
@@ -181,28 +296,67 @@ export class UserService {
     }
   }
 
+  /**
+   * Return one user by id, without OTP fields.
+   */
   async getUserById(id: string): Promise<GetUserRes> {
     try {
-      const user = await this.userRepository.findOne({ _id: id });
+      const user = await this.userRepository.findOne(
+        { _id: id },
+        { select: publicUserFields },
+      );
       if (!user) {
-        return {
-          user: null,
-          message: 'USER_NOT_FOUND',
-          status: 404,
-        };
+        return this.result(404, 'USER_NOT_FOUND');
       }
-      return {
-        user,
-        status: 200,
-        message: 'USER_FOUND',
-      };
+      return this.result(200, 'USER_FOUND', user);
     } catch (error) {
       this.logger.error('Error getting user by id:', error);
-      return {
-        message: 'INTERNAL_SERVER_ERROR',
-        status: 500,
-        user: null,
-      };
+      return this.result(500, 'INTERNAL_SERVER_ERROR');
     }
   }
+
+  /**
+   * True when another user already owns this email.
+   */
+  private async emailTaken(email: string, exceptId?: string): Promise<boolean> {
+    const existing = await this.userRepository.findOne({
+      email,
+      ...(exceptId && { _id: { $ne: exceptId } }),
+    });
+    return !!existing;
+  }
+
+  /**
+   * Build a single-user response and strip private fields.
+   */
+  private result(
+    status: number,
+    message: string,
+    user?: User | null,
+  ): GetUserRes {
+    return {
+      status,
+      message,
+      user,
+    };
+  }
+}
+
+/**
+ * Empty page returned when a user search fails.
+ */
+function emptyUsersPage(limit: number): GetUsersPaginator {
+  return {
+    data: [],
+    paginatorInfo: {
+      count: 0,
+      currentPage: 1,
+      perPage: limit,
+      totalPages: 0,
+      hasNextPage: false,
+      hasPrevPage: false,
+      nextPage: null,
+      prevPage: null,
+    },
+  };
 }

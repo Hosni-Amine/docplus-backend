@@ -4,22 +4,23 @@ import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
+import { OfficeModule } from './office/office.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { DatabaseModule } from './common/database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { MailingModule } from './mailing/mailing.module';
-import { RequestTypeModule } from './request-type/request-type.module';
-import { RequestModule } from './request/request.module';
 import { UploadModule } from './upload/upload.module';
+import { GuardsModule } from './guards/guards.module';
+import { JwtSignOptions } from '@nestjs/jwt';
 
 @Module({
   imports: [
     DatabaseModule,
+    GuardsModule,
     AuthModule,
     UserModule,
-    RequestTypeModule,
-    RequestModule,
+    OfficeModule,
     MailingModule,
     UploadModule,
     ConfigModule.forRoot({
@@ -29,9 +30,12 @@ import { UploadModule } from './upload/upload.module';
     JwtModule.registerAsync({
       global: true,
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'),
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get('JWT_EXPIRY'),
+          expiresIn: configService.getOrThrow<string>(
+            'JWT_EXPIRY',
+          ) as JwtSignOptions['expiresIn'],
+          algorithm: 'HS256' as const,
         },
       }),
       inject: [ConfigService],
