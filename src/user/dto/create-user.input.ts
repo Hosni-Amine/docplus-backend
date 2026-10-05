@@ -16,10 +16,6 @@ export class CreateUserInput {
   @IsOptional()
   phone?: string;
 
-  @IsString()
-  @IsOptional()
-  fullname?: string;
-
   @IsOptional()
   @IsString()
   address?: string;

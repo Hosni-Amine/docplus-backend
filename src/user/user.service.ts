@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { ERole, handleFileUpload } from '../common';
+import { ERole, deleteUploadedFile } from '../common';
 import { OfficeRepository } from '../office/office.repository';
 import { GetUsersInput, GetUsersPaginator } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update.user.input';
 import { MailingService } from '../mailing/mailing.service';
 import { UserRepository } from './user.repository';
+import { IBaseRes } from '../common/responses.dto';
 import { GetAllUsersRes, GetUserRes } from './user.controller';
 import { User } from './entities/user.entity';
 import { publicUserFields } from './user.fields';
@@ -32,7 +33,7 @@ export class UserService {
    */
   async createAdminSuperAdmin(
     createUserInput: CreateUserInput,
-  ): Promise<GetUserRes> {
+  ): Promise<IBaseRes> {
     try {
       if (
         createUserInput.email &&
@@ -63,6 +64,7 @@ export class UserService {
 
       const newUser = await this.userRepository.create({
         ...rest,
+        isPublic: false,
         isBlocked: false,
         role,
         officeId:
@@ -72,11 +74,11 @@ export class UserService {
       if (newUser.email) {
         await this.mailingService.sendWelcomeEmail(
           newUser.email,
-          newUser.fullname,
+          newUser.firstName || newUser.email,
         );
       }
 
-      return this.result(201, 'USER_CREATED_SUCCESSFULLY', newUser);
+      return { status: 201, message: 'USER_CREATED_SUCCESSFULLY' };
     } catch (error) {
       this.logger.error(error);
       return this.result(500, 'INTERNAL_SERVER_ERROR');
@@ -90,7 +92,7 @@ export class UserService {
   async createUser(
     createUserInput: CreateUserInput,
     actor: Actor,
-  ): Promise<GetUserRes> {
+  ): Promise<IBaseRes> {
     try {
       if (
         createUserInput.email &&
@@ -125,6 +127,7 @@ export class UserService {
 
       const newUser = await this.userRepository.create({
         ...rest,
+        isPublic: false,
         isBlocked: false,
         role,
         officeId: new Types.ObjectId(officeId),
@@ -133,11 +136,11 @@ export class UserService {
       if (newUser.email) {
         await this.mailingService.sendWelcomeEmail(
           newUser.email,
-          newUser.fullname,
+          newUser.firstName || newUser.email,
         );
       }
 
-      return this.result(201, 'USER_CREATED_SUCCESSFULLY', newUser);
+      return { status: 201, message: 'USER_CREATED_SUCCESSFULLY' };
     } catch (error) {
       this.logger.error(error);
       return this.result(500, 'INTERNAL_SERVER_ERROR');
@@ -151,10 +154,9 @@ export class UserService {
   async updateUser(
     updateUserInput: Partial<UpdateUserInput>,
     actor: Actor,
-  ): Promise<GetUserRes> {
+  ): Promise<IBaseRes> {
     try {
-      const { id, photo, role, isBlocked, isDeleted, ...rest } =
-        updateUserInput;
+      const { id, role, isBlocked, isDeleted, ...rest } = updateUserInput;
       const isAdmin =
         actor?.role === ERole.ADMIN || actor?.role === ERole.SUPER_ADMIN;
 
@@ -191,16 +193,43 @@ export class UserService {
         updates.tokenVersion = (existingUser.tokenVersion ?? 0) + 1;
       }
 
-      if (photo) {
-        updates.photo = await handleFileUpload(photo, 'users');
+      if (
+        updates.avatarUrl &&
+        existingUser.avatarUrl &&
+        updates.avatarUrl !== existingUser.avatarUrl
+      ) {
+        await deleteUploadedFile([existingUser.avatarUrl]);
       }
 
-      const updatedUser = await this.userRepository.findOneAndUpdate(
+      await this.userRepository.findOneAndUpdate({ _id: id }, updates);
+
+      return { status: 200, message: 'USER_UPDATED_SUCCESSFULLY' };
+    } catch (error) {
+      this.logger.error(error);
+      return this.result(500, 'INTERNAL_SERVER_ERROR');
+    }
+  }
+
+  /**
+   * Soft-delete a user. The route is already limited to admins.
+   */
+  async deleteUser(id: string): Promise<IBaseRes> {
+    try {
+      const existingUser = await this.userRepository.findOne({ _id: id });
+      if (!existingUser) {
+        this.logger.error(`User with ID ${id} not found`);
+        return this.result(404, 'USER_NOT_FOUND');
+      }
+
+      await this.userRepository.findOneAndUpdate(
         { _id: id },
-        updates,
+        {
+          isDeleted: true,
+          tokenVersion: (existingUser.tokenVersion ?? 0) + 1,
+        },
       );
 
-      return this.result(200, 'USER_UPDATED_SUCCESSFULLY', updatedUser);
+      return { status: 200, message: 'USER_UPDATED_SUCCESSFULLY' };
     } catch (error) {
       this.logger.error(error);
       return this.result(500, 'INTERNAL_SERVER_ERROR');
@@ -214,7 +243,7 @@ export class UserService {
     getUserInput: GetUsersInput,
   ): Promise<GetUsersPaginator> {
     try {
-      const { fullname, role, isDeleted, limit = 10, skip = 0 } = getUserInput;
+      const { name, role, isDeleted, limit = 10, skip = 0 } = getUserInput;
       const query: Record<string, unknown> = {
         isDeleted: isDeleted || false,
       };
@@ -222,14 +251,19 @@ export class UserService {
       if (role) {
         query.role = role;
       }
-      if (fullname) {
-        query.fullname = { $regex: fullname, $options: 'i' };
+      if (name) {
+        const nameRegex = { $regex: name, $options: 'i' };
+        query.$or = [
+          { firstName: nameRegex },
+          { lastName: nameRegex },
+          { midNames: nameRegex },
+        ];
       }
 
       return await this.userRepository.getWithPagination(query, {
         limit,
         skip,
-        sort: { fullname: -1 },
+        sort: { lastName: -1, firstName: -1 },
         select: publicUserFields,
       });
     } catch (error) {

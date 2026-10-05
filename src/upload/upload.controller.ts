@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Post,
   UseGuards,
@@ -17,7 +18,12 @@ export class UploadController {
   @UseGuards(AuthGuard)
   @Post('file')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Multer.File, @Res() res: Response) {
+  async uploadFile(
+    @UploadedFile() file: Multer.File,
+    @Body('folder') folder: string,
+    @Body('subfolder') subfolder: string | undefined,
+    @Res() res: Response,
+  ) {
     try {
       if (!file) {
         return res.status(400).send({
@@ -27,7 +33,7 @@ export class UploadController {
         });
       }
 
-      const filePath = await handleFileUpload(file, 'demandes');
+      const [filePath] = await handleFileUpload([file], folder, subfolder);
       const fileUrl = `/${filePath}`;
 
       return res.status(200).send({

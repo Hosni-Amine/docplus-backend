@@ -14,13 +14,19 @@ export class User extends AbstractDocument {
   email?: string;
 
   @Prop()
-  photo?: string;
+  avatarUrl?: string;
 
   @Prop()
   phone?: string;
 
   @Prop()
-  fullname?: string;
+  firstName?: string;
+
+  @Prop()
+  lastName?: string;
+
+  @Prop({ type: [String], default: [] })
+  midNames?: string[];
 
   @Prop({ enum: ERole, type: String })
   role: ERole;
@@ -53,6 +59,30 @@ export class User extends AbstractDocument {
 
   @Prop()
   address?: string;
+
+  @Prop()
+  country?: string;
+
+  @Prop()
+  state?: string;
+
+  @Prop()
+  city?: string;
+
+  @Prop()
+  zipCode?: string;
+
+  @Prop()
+  about?: string;
+
+  @Prop({ default: false })
+  isPublic: boolean;
+
+  @Prop({ type: [String], default: [] })
+  currentWork?: string[];
+
+  @Prop({ type: [String], default: [] })
+  study?: string[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

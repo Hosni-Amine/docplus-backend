@@ -5,7 +5,7 @@ import { IsOptional, IsString, IsNumber, IsBoolean } from 'class-validator';
 export class GetUsersInput {
   @IsOptional()
   @IsString()
-  fullname?: string;
+  name?: string;
 
   @IsOptional()
   @IsString()

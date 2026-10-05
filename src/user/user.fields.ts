@@ -1,4 +1,4 @@
 export const publicUserFields =
-  'email fullname role photo phone address officeId';
+  'email firstName lastName midNames role avatarUrl phone address country state city zipCode about isPublic currentWork study officeId';
 
 export const tokenUserFields = `${publicUserFields} isBlocked isDeleted tokenVersion`;

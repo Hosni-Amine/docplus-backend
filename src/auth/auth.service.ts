@@ -98,7 +98,7 @@ export class AuthService {
       // Send OTP via email
       const is_sent = await this.mailingService.sendOtpCode(
         current_user.email,
-        current_user.fullname,
+        current_user.firstName || current_user.email,
         otpCode,
         5, // 5 minutes
       );
@@ -197,7 +197,9 @@ export class AuthService {
         {
           id: current_user._id.toString(),
           role: current_user.role,
-          fullname: current_user.fullname,
+          firstName: current_user.firstName,
+          lastName: current_user.lastName,
+          midNames: current_user.midNames ?? [],
           email: current_user.email,
           tokenVersion: current_user.tokenVersion ?? 0,
         },
