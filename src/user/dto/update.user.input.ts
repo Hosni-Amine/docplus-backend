@@ -1,8 +1,10 @@
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { PartialType } from '@nestjs/swagger';
+import { OmitType, PartialType } from '@nestjs/swagger';
 import { CreateUserInput } from './create-user.input';
 
-export class UpdateUserInput extends PartialType(CreateUserInput) {
+export class UpdateUserInput extends PartialType(
+  OmitType(CreateUserInput, ['officeId'] as const),
+) {
   @IsNotEmpty()
   @IsString()
   id: string;
@@ -18,14 +20,4 @@ export class UpdateUserInput extends PartialType(CreateUserInput) {
   @IsOptional()
   @IsBoolean()
   isDeleted?: boolean;
-}
-
-export class AffectUserToOfficeInput {
-  @IsNotEmpty()
-  @IsString()
-  userId: string;
-
-  @IsNotEmpty()
-  @IsString()
-  officeId: string;
 }

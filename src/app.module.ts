@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
+import { OfficeModule } from './office/office.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { DatabaseModule } from './common/database/database.module';
@@ -19,6 +20,7 @@ import { JwtSignOptions } from '@nestjs/jwt';
     GuardsModule,
     AuthModule,
     UserModule,
+    OfficeModule,
     MailingModule,
     UploadModule,
     ConfigModule.forRoot({

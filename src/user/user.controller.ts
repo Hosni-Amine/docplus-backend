@@ -50,12 +50,22 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(ERole.SUPER_ADMIN, ERole.ADMIN)
-  @Post()
-  async createUser(
+  @Roles(ERole.SUPER_ADMIN)
+  @Post('create-admin')
+  async createAdminSuperAdmin(
     @Body() createUserInput: CreateUserInput,
   ): Promise<GetUserRes> {
-    return await this.userService.createUser(createUserInput);
+    return await this.userService.createAdminSuperAdmin(createUserInput);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN)
+  @Post('create-user')
+  async createUser(
+    @Body() createUserInput: CreateUserInput,
+    @CurrentUser() user: User,
+  ): Promise<GetUserRes> {
+    return await this.userService.createUser(createUserInput, user);
   }
 
   @UseGuards(AuthGuard)

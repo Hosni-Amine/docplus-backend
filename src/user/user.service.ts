@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { ERole, handleFileUpload } from '../common';
+import { OfficeRepository } from '../office/office.repository';
 import { GetUsersInput, GetUsersPaginator } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update.user.input';
@@ -12,6 +14,7 @@ import { publicUserFields } from './user.fields';
 type Actor = {
   id?: string;
   role?: ERole;
+  officeId?: { toString(): string } | string;
 };
 
 @Injectable()
@@ -21,12 +24,15 @@ export class UserService {
   constructor(
     private readonly mailingService: MailingService,
     private readonly userRepository: UserRepository,
+    private readonly officeRepository: OfficeRepository,
   ) {}
 
   /**
-   * Create a user and send a welcome email when an address is present.
+   * Create a admin or super admin and send a welcome email when an address is present.
    */
-  async createUser(createUserInput: CreateUserInput): Promise<GetUserRes> {
+  async createAdminSuperAdmin(
+    createUserInput: CreateUserInput,
+  ): Promise<GetUserRes> {
     try {
       if (
         createUserInput.email &&
@@ -38,11 +44,90 @@ export class UserService {
         return this.result(400, 'EMAIL_ALREADY_EXISTED');
       }
 
-      const { role, ...rest } = createUserInput;
+      const { officeId, role, ...rest } = createUserInput;
+      if (role !== ERole.ADMIN && role !== ERole.SUPER_ADMIN) {
+        return this.result(403, 'FORBIDDEN');
+      }
+      if (role === ERole.ADMIN) {
+        if (!officeId) {
+          return this.result(400, 'OFFICE_REQUIRED');
+        }
+        const office = await this.officeRepository.findOne({
+          _id: officeId,
+          isDeleted: false,
+        });
+        if (!office) {
+          return this.result(404, 'OFFICE_NOT_FOUND');
+        }
+      }
+
       const newUser = await this.userRepository.create({
         ...rest,
         isBlocked: false,
-        role: role as ERole,
+        role,
+        officeId:
+          role === ERole.SUPER_ADMIN ? undefined : new Types.ObjectId(officeId),
+      });
+
+      if (newUser.email) {
+        await this.mailingService.sendWelcomeEmail(
+          newUser.email,
+          newUser.fullname,
+        );
+      }
+
+      return this.result(201, 'USER_CREATED_SUCCESSFULLY', newUser);
+    } catch (error) {
+      this.logger.error(error);
+      return this.result(500, 'INTERNAL_SERVER_ERROR');
+    }
+  }
+
+  /**
+   * Create a USER in an office.
+   * Admin passes officeId. Office admin uses their own office.
+   */
+  async createUser(
+    createUserInput: CreateUserInput,
+    actor: Actor,
+  ): Promise<GetUserRes> {
+    try {
+      if (
+        createUserInput.email &&
+        (await this.emailTaken(createUserInput.email))
+      ) {
+        this.logger.error(
+          `This mail address ${createUserInput.email} is already existed!`,
+        );
+        return this.result(400, 'EMAIL_ALREADY_EXISTED');
+      }
+
+      const { officeId: requestedOfficeId, role, ...rest } = createUserInput;
+      if (role !== ERole.USER && role !== ERole.ADMIN) {
+        return this.result(403, 'FORBIDDEN');
+      }
+      const officeId =
+        actor.role === ERole.ADMIN
+          ? actor.officeId?.toString()
+          : requestedOfficeId;
+
+      if (!officeId) {
+        return this.result(400, 'OFFICE_REQUIRED');
+      }
+
+      const office = await this.officeRepository.findOne({
+        _id: officeId,
+        isDeleted: false,
+      });
+      if (!office) {
+        return this.result(404, 'OFFICE_NOT_FOUND');
+      }
+
+      const newUser = await this.userRepository.create({
+        ...rest,
+        isBlocked: false,
+        role,
+        officeId: new Types.ObjectId(officeId),
       });
 
       if (newUser.email) {
