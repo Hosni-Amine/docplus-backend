@@ -38,6 +38,9 @@ export class MailingService {
       maxConnections: 1,
       rateDelta: 20000,
       rateLimit: 5,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
   }
 
@@ -94,6 +97,7 @@ export class MailingService {
               })}>`,
           html: mailOptions.text ? mailOptions.text : html,
         });
+        this.logger.log('Email accepted by the mail server for ' + recipients);
       } else {
         this.logger.log(
           'send mail to : ' +
@@ -104,12 +108,13 @@ export class MailingService {
       }
     } catch (e: any) {
       this.logger.error(e.message || 'Failed to send email');
+      throw e;
     }
   }
 
   async sendWelcomeEmail(email: string, fullname: string): Promise<boolean> {
     try {
-      this.sendMail({
+      await this.sendMail({
         templatePath: MailTemplate.WelcomeEmail,
         context: {
           fullname,
@@ -132,7 +137,7 @@ export class MailingService {
     expirationMinutes: number,
   ): Promise<boolean> {
     try {
-      this.sendMail({
+      await this.sendMail({
         templatePath: MailTemplate.OtpCodeEmail,
         context: {
           fullname,
