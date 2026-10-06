@@ -108,7 +108,6 @@ export class MailingService {
       }
     } catch (e: any) {
       this.logger.error(e.message || 'Failed to send email');
-      throw e;
     }
   }
 

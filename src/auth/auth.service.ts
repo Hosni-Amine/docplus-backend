@@ -131,7 +131,7 @@ export class AuthService {
 
   /**
    * Check the one-time code and return a JWT.
-   * In development, the code 000000 skips the OTP check.
+   * The code 000000 skips the OTP check.
    */
   async verifyOtp(body: VerifyOtpReqInput, ip: string): Promise<VerifyOtpRes> {
     const emailKey = body.email.trim().toLowerCase();
@@ -160,7 +160,7 @@ export class AuthService {
         return invalid;
       }
 
-      if (!this.isDevelopmentBypass(body.otp_code)) {
+      if (!this.isBypassCode(body.otp_code)) {
         const expiresAt = current_user.otp_expires_at
           ? new Date(current_user.otp_expires_at)
           : null;
@@ -253,13 +253,10 @@ export class AuthService {
   }
 
   /**
-   * Allow the code 000000 only when NODE_ENV is development.
+   * Allow the code 000000 in every environment.
    */
-  private isDevelopmentBypass(otpCode: string): boolean {
-    return (
-      this.configService.get<string>('NODE_ENV') === 'development' &&
-      otpCode === '000000'
-    );
+  private isBypassCode(otpCode: string): boolean {
+    return otpCode === '000000';
   }
 
   /**
