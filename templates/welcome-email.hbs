@@ -1,113 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>DocPlus - Bienvenue</title>
-    <style>
-        body {
-            font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.7;
-            color: #1a2b3c;
-            background-color: #f5f7fa;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 48px 32px;
-            background-color: #f8f9fa;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .logo {
-            width: 180px;
-            height: auto;
-            margin-bottom: 24px;
-        }
-        .title {
-            color: #0f4c81;
-            font-size: 28px;
-            margin-bottom: 24px;
-            font-weight: 600;
-        }
-        .button {
-            display: inline-block;
-            padding: 14px 36px;
-            background-color: #0f4c81;
-            color: white !important;
-            text-decoration: none;
-            border-radius: 8px;
-            margin: 32px 0;
-            font-weight: 600;
-            text-align: center;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(15, 76, 129, 0.2);
-        }
-        .button:hover {
-            background-color: #0d3d68;
-            transform: translateY(-1px);
-        }
-        .security-notice {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-left: 4px solid #0f4c81;
-            border-radius: 8px;
-            margin: 24px 0;
-            font-size: 15px;
-            color: #445668;
-        }
-        .footer {
-            margin-top: 40px;
-            padding-top: 24px;
-            border-top: 1px solid #edf2f7;
-            font-size: 13px;
-            color: #64748b;
-            text-align: center;
-            line-height: 1.6;
-        }
-        .highlight {
-            color: #0f4c81;
-            font-weight: 600;
-        }
-        .url-text {
-            word-break: break-all;
-            color: #0f4c81;
-            font-size: 14px;
-            background-color: #f8f9fa;
-            padding: 12px;
-            border-radius: 6px;
-            margin: 16px 0;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to DocPlus</title>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <!-- <img src="logo-url" alt="MedPlatform" class="logo"> -->
-            <h1 class="title">Bienvenue sur DocPlus</h1>
-        </div>
-        <div class="security-notice">
-            <strong>
-                {{#if fullname}}
-                    <p>Cher/Chère {{fullname}},</p>
-                {{else}}
-                    <p>Cher/Chère Client(e),</p>
-                {{/if}}
-            </strong>
-            <p>Bienvenue sur DocPlus. Pour commencer à utiliser nos services, cliquez sur le bouton ci-dessous.</p>
-        </div>
-        <div style="text-align: center;">
-            <a href="{{url}}" class="button">Se connecter</a>
-        </div>
-        <div class="footer">
-            {{!-- <p>Ce lien expirera dans {{expirationHours}} heures</p> --}}
-            <p>Ceci est un message automatique - merci de ne pas répondre à cet email.</p>
-            <p>© DocPlus. Tous droits réservés.</p>
-        </div>
-    </div>
+<body style="margin:0;padding:0;background-color:#eef2f6;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+    Your DocPlus account is ready. Sign in to get started.
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eef2f6;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:16px;">
+          <tr>
+            <td style="padding:32px 32px 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+              <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#0f4c81;">DocPlus</p>
+              <h1 style="margin:12px 0 0;font-size:24px;line-height:1.3;font-weight:600;color:#122033;">Welcome to DocPlus</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#243140;">
+              {{#if fullname}}
+                <p style="margin:16px 0 0;">Hello {{fullname}},</p>
+              {{else}}
+                <p style="margin:16px 0 0;">Hello,</p>
+              {{/if}}
+              <p style="margin:12px 0 0;">Your account is ready. Sign in to start using DocPlus.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:28px 32px 8px;">
+              <a href="{{url}}" style="display:inline-block;padding:14px 28px;background-color:#0f4c81;color:#ffffff;text-decoration:none;border-radius:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;">Sign in</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 32px 32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#5c6b7a;">
+              <p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #e6ebf1;">This is an automatic message. Please do not reply.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
-</html> 
+</html>
