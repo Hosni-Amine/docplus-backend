@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ERole } from '../common';
+import { EOfficeStatus, ERole } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { OfficeRepository } from './office.repository';
 import { CreateOfficeInput } from './dto/create-office.input';
@@ -31,7 +31,10 @@ export class OfficeService {
    */
   async createOffice(input: CreateOfficeInput): Promise<GetOfficeRes> {
     try {
-      const office = await this.officeRepository.create(input);
+      const office = await this.officeRepository.create({
+        ...input,
+        status: EOfficeStatus.ACTIVE,
+      });
       return { status: 201, message: 'OFFICE_CREATED_SUCCESSFULLY', office };
     } catch (error) {
       this.logger.error(error);
@@ -44,7 +47,7 @@ export class OfficeService {
    */
   async getOffices(): Promise<GetOfficesRes> {
     try {
-      const offices = await this.officeRepository.find({ isDeleted: false });
+      const offices = await this.officeRepository.find({});
       return { status: 200, message: 'OFFICES_FOUND_SUCCESSFULLY', offices };
     } catch (error) {
       this.logger.error(error);
@@ -60,10 +63,7 @@ export class OfficeService {
       if (!this.canAccess(actor, id)) {
         return { status: 403, message: 'FORBIDDEN', office: null };
       }
-      const office = await this.officeRepository.findOne({
-        _id: id,
-        isDeleted: false,
-      });
+      const office = await this.officeRepository.findOne({ _id: id });
       if (!office) {
         return { status: 404, message: 'OFFICE_NOT_FOUND', office: null };
       }
@@ -86,10 +86,7 @@ export class OfficeService {
       if (!this.canAccess(actor, input.id)) {
         return { status: 403, message: 'FORBIDDEN', office: null };
       }
-      const existing = await this.officeRepository.findOne({
-        _id: input.id,
-        isDeleted: false,
-      });
+      const existing = await this.officeRepository.findOne({ _id: input.id });
       if (!existing) {
         return { status: 404, message: 'OFFICE_NOT_FOUND', office: null };
       }
@@ -106,6 +103,27 @@ export class OfficeService {
     } catch (error) {
       this.logger.error(error);
       return { status: 500, message: 'INTERNAL_SERVER_ERROR', office: null };
+    }
+  }
+
+  /**
+   * Mark an office deleted. The record stays, and the route is already limited to the platform admin.
+   */
+  async deleteOffice(id: string): Promise<IBaseRes> {
+    try {
+      const existing = await this.officeRepository.findOne({ _id: id });
+      if (!existing) {
+        return { status: 404, message: 'OFFICE_NOT_FOUND' };
+      }
+
+      await this.officeRepository.findOneAndUpdate(
+        { _id: id },
+        { status: EOfficeStatus.DELETED },
+      );
+      return { status: 200, message: 'OFFICE_DELETED_SUCCESSFULLY' };
+    } catch (error) {
+      this.logger.error(error);
+      return { status: 500, message: 'INTERNAL_SERVER_ERROR' };
     }
   }
 

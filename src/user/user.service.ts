@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { ERole, EUserStatus, deleteUploadedFile } from '../common';
+import {
+  EOfficeStatus,
+  ERole,
+  EUserStatus,
+  deleteUploadedFile,
+} from '../common';
 import { OfficeRepository } from '../office/office.repository';
 import { GetUsersInput, GetUsersPaginator } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
@@ -53,11 +58,8 @@ export class UserService {
         if (!officeId) {
           return this.result(400, 'OFFICE_REQUIRED');
         }
-        const office = await this.officeRepository.findOne({
-          _id: officeId,
-          isDeleted: false,
-        });
-        if (!office) {
+        const office = await this.officeRepository.findOne({ _id: officeId });
+        if (!office || office.status !== EOfficeStatus.ACTIVE) {
           return this.result(404, 'OFFICE_NOT_FOUND');
         }
       }
@@ -117,11 +119,8 @@ export class UserService {
         return this.result(400, 'OFFICE_REQUIRED');
       }
 
-      const office = await this.officeRepository.findOne({
-        _id: officeId,
-        isDeleted: false,
-      });
-      if (!office) {
+      const office = await this.officeRepository.findOne({ _id: officeId });
+      if (!office || office.status !== EOfficeStatus.ACTIVE) {
         return this.result(404, 'OFFICE_NOT_FOUND');
       }
 

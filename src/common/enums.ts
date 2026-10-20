@@ -10,3 +10,9 @@ export enum EUserStatus {
   DISABLED = 'disabled',
   DELETED = 'deleted',
 }
+
+export enum EOfficeStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  DELETED = 'deleted',
+}

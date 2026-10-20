@@ -1,4 +1,4 @@
-import { AbstractDocument } from '../../common';
+import { AbstractDocument, EOfficeStatus } from '../../common';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 @Schema({
@@ -10,7 +10,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 })
 export class Office extends AbstractDocument {
   @Prop({ required: true })
-  name: string;
+  legalName: string;
 
   @Prop()
   phone?: string;
@@ -19,7 +19,22 @@ export class Office extends AbstractDocument {
   address?: string;
 
   @Prop()
+  country?: string;
+
+  @Prop()
+  state?: string;
+
+  @Prop()
+  city?: string;
+
+  @Prop()
+  zipCode?: string;
+
+  @Prop()
   email?: string;
+
+  @Prop({ enum: EOfficeStatus, type: String, default: EOfficeStatus.ACTIVE })
+  status: EOfficeStatus;
 }
 
 export const OfficeSchema = SchemaFactory.createForClass(Office);

@@ -11,6 +11,7 @@ import { AuthGuard, RolesGuard } from '../guards';
 import { CurrentUser } from '../decorators';
 import { Roles } from '../decorators/roles.decorator';
 import { ERole } from '../common';
+import { IBaseRes } from '../common/responses.dto';
 import { GetOfficeRes, GetOfficesRes, OfficeService } from './office.service';
 import { CreateOfficeInput } from './dto/create-office.input';
 import { UpdateOfficeInput } from './dto/update-office.input';
@@ -39,13 +40,21 @@ export class OfficeController {
     return this.officeService.getOffices();
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.SUPER_ADMIN)
   @Get(':id')
   async getOfficeById(
     @Param('id') id: string,
     @CurrentUser() user: Actor,
   ): Promise<GetOfficeRes> {
     return this.officeService.getOfficeById(id, user);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.SUPER_ADMIN)
+  @Patch('delete/:id')
+  async deleteOffice(@Param('id') id: string): Promise<IBaseRes> {
+    return this.officeService.deleteOffice(id);
   }
 
   @UseGuards(AuthGuard, RolesGuard)
