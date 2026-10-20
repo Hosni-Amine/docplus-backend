@@ -22,33 +22,9 @@ export class UpdateUserInput extends PartialType(
   avatarUrl?: string;
 
   @IsOptional()
-  @IsString()
-  firstName?: string;
-
-  @IsOptional()
-  @IsString()
-  lastName?: string;
-
-  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   midNames?: string[];
-
-  @IsOptional()
-  @IsString()
-  country?: string;
-
-  @IsOptional()
-  @IsString()
-  state?: string;
-
-  @IsOptional()
-  @IsString()
-  city?: string;
-
-  @IsOptional()
-  @IsString()
-  zipCode?: string;
 
   @IsOptional()
   @IsString()
