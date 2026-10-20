@@ -72,7 +72,7 @@ export class AuthService {
         { session },
       );
 
-      if (!current_user || current_user.status === EUserStatus.ACTIVE) {
+      if (!current_user || current_user.status !== EUserStatus.ACTIVE) {
         await session.abortTransaction();
         return this.genericOtpResponse();
       }
