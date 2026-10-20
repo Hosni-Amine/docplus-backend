@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { ERole, deleteUploadedFile } from '../common';
+import { ERole, EUserStatus, deleteUploadedFile } from '../common';
 import { OfficeRepository } from '../office/office.repository';
 import { GetUsersInput, GetUsersPaginator } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
@@ -65,7 +65,7 @@ export class UserService {
       const newUser = await this.userRepository.create({
         ...rest,
         isPublic: false,
-        isBlocked: false,
+        status: EUserStatus.ACTIVE,
         role,
         officeId:
           role === ERole.SUPER_ADMIN ? undefined : new Types.ObjectId(officeId),
@@ -128,7 +128,7 @@ export class UserService {
       const newUser = await this.userRepository.create({
         ...rest,
         isPublic: false,
-        isBlocked: false,
+        status: EUserStatus.ACTIVE,
         role,
         officeId: new Types.ObjectId(officeId),
       });
@@ -148,19 +148,19 @@ export class UserService {
   }
 
   /**
-   * Update a profile. Role, block, and delete changes are admin-only.
-   * Other users can update only their own profile.
+   * Update a profile. The route already allows only admins and super admins.
+   * Role and status can be changed only by a super admin.
    */
   async updateUser(
     updateUserInput: Partial<UpdateUserInput>,
     actor: Actor,
   ): Promise<IBaseRes> {
     try {
-      const { id, role, isBlocked, isDeleted, ...rest } = updateUserInput;
-      const isAdmin =
-        actor?.role === ERole.ADMIN || actor?.role === ERole.SUPER_ADMIN;
+      const { id, role, status, ...rest } = updateUserInput;
+      const isSuperAdmin = actor?.role === ERole.SUPER_ADMIN;
 
-      if (!isAdmin && id !== actor?.id) {
+      // Role and status are reserved for a super admin.
+      if ((role || status) && !isSuperAdmin) {
         return this.result(403, 'FORBIDDEN');
       }
 
@@ -177,17 +177,18 @@ export class UserService {
 
       const updates: Partial<User> = { ...rest };
 
-      if (isAdmin) {
+      // Role and status stay out of the profile payload. Only a super admin can set them.
+      if (isSuperAdmin) {
         if (role) updates.role = role as ERole;
-        if (typeof isBlocked === 'boolean') updates.isBlocked = isBlocked;
-        if (typeof isDeleted === 'boolean') updates.isDeleted = isDeleted;
+        if (status) updates.status = status;
       }
 
+      // A changed email, role, or a disabled/deleted status invalidates the current token.
       const accessChanged =
         (updates.email !== undefined && updates.email !== existingUser.email) ||
         (updates.role !== undefined && updates.role !== existingUser.role) ||
-        updates.isBlocked === true ||
-        updates.isDeleted === true;
+        updates.status === EUserStatus.DISABLED ||
+        updates.status === EUserStatus.DELETED;
 
       if (accessChanged) {
         updates.tokenVersion = (existingUser.tokenVersion ?? 0) + 1;
@@ -224,7 +225,7 @@ export class UserService {
       await this.userRepository.findOneAndUpdate(
         { _id: id },
         {
-          isDeleted: true,
+          status: EUserStatus.DELETED,
           tokenVersion: (existingUser.tokenVersion ?? 0) + 1,
         },
       );
@@ -243,10 +244,12 @@ export class UserService {
     getUserInput: GetUsersInput,
   ): Promise<GetUsersPaginator> {
     try {
-      const { name, role, isDeleted, limit = 10, skip = 0 } = getUserInput;
-      const query: Record<string, unknown> = {
-        isDeleted: isDeleted || false,
-      };
+      const { name, role, status, limit = 10, skip = 0 } = getUserInput;
+      const query: Record<string, unknown> = {};
+
+      if (status) {
+        query.status = status;
+      }
 
       if (role) {
         query.role = role;
@@ -273,14 +276,34 @@ export class UserService {
   }
 
   /**
-   * Return every user that is not deleted, without OTP fields.
+   * Return every user, without OTP fields.
    */
   async getAllUsers(): Promise<GetAllUsersRes> {
     try {
-      const users = await this.userRepository.find(
-        { isDeleted: false },
-        publicUserFields,
-      );
+      const users = await this.userRepository.find({}, publicUserFields);
+      return {
+        users,
+        status: 200,
+        message: 'USERS_FOUND_SUCCESSFULLY',
+      };
+    } catch (error) {
+      this.logger.error('Error getting users:', error);
+      return {
+        users: [],
+        status: 500,
+        message: 'INTERNAL_SERVER_ERROR',
+      };
+    }
+  }
+
+  /**
+   * Return every user matching the filter, without OTP fields.
+   */
+  async getAllAdmins(): Promise<GetAllUsersRes> {
+    try {
+      const query = { role: { $in: [ERole.ADMIN, ERole.SUPER_ADMIN] } };
+
+      const users = await this.userRepository.find(query, publicUserFields);
       return {
         users,
         status: 200,

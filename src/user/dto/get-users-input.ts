@@ -1,6 +1,6 @@
-import { ERole, PaginatorInfo } from '../../common';
+import { ERole, EUserStatus, PaginatorInfo } from '../../common';
 import { User } from '../entities/user.entity';
-import { IsOptional, IsString, IsNumber, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
 
 export class GetUsersInput {
   @IsOptional()
@@ -20,8 +20,8 @@ export class GetUsersInput {
   skip?: number;
 
   @IsOptional()
-  @IsBoolean()
-  isDeleted?: boolean;
+  @IsEnum(EUserStatus)
+  status?: EUserStatus;
 }
 
 export interface GetUsersPaginator {

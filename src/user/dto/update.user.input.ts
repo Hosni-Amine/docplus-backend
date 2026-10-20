@@ -1,11 +1,13 @@
 import {
   IsArray,
   IsBoolean,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
 import { OmitType, PartialType } from '@nestjs/swagger';
+import { EUserStatus } from '../../common';
 import { CreateUserInput } from './create-user.input';
 
 export class UpdateUserInput extends PartialType(
@@ -67,10 +69,6 @@ export class UpdateUserInput extends PartialType(
   study?: string[];
 
   @IsOptional()
-  @IsBoolean()
-  isBlocked?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isDeleted?: boolean;
+  @IsEnum(EUserStatus)
+  status?: EUserStatus;
 }

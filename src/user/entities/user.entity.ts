@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
-import { AbstractDocument, ERole } from '../../common';
+import { AbstractDocument, ERole, EUserStatus } from '../../common';
 
 @Schema({
   versionKey: false,
@@ -31,11 +31,11 @@ export class User extends AbstractDocument {
   @Prop({ enum: ERole, type: String })
   role: ERole;
 
+  @Prop({ enum: EUserStatus, type: String, default: EUserStatus.ACTIVE })
+  status: EUserStatus;
+
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Office' })
   officeId?: Types.ObjectId;
-
-  @Prop({ default: false })
-  isBlocked: boolean;
 
   @Prop({ nullable: true })
   otp_code?: string;

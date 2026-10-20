@@ -68,7 +68,8 @@ export class UserController {
     return await this.userService.createUser(createUserInput, user);
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN, ERole.SUPER_ADMIN)
   @Patch()
   async updateUser(
     @Body() updateUserInput: UpdateUserInput,
@@ -87,8 +88,12 @@ export class UserController {
 
   @UseGuards(AuthGuard)
   @Get()
-  async getAllUsers(): Promise<GetAllUsersRes> {
-    return await this.userService.getAllUsers();
+  async getAllUsers(@CurrentUser() currentUser: User): Promise<GetAllUsersRes> {
+    if (currentUser.role === ERole.SUPER_ADMIN) {
+      return await this.userService.getAllAdmins();
+    } else {
+      return await this.userService.getAllUsers();
+    }
   }
 
   @UseGuards(AuthGuard)

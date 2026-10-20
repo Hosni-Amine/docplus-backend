@@ -4,7 +4,7 @@ import { UserRepository } from '../user/user.repository';
 import { Injectable, Logger } from '@nestjs/common';
 import { MailingService } from '../mailing/mailing.service';
 import { ConfigService } from '@nestjs/config';
-import { IBaseRes, OtpService } from '../common';
+import { EUserStatus, IBaseRes, OtpService } from '../common';
 import {
   RequestOtpReqInput,
   RequestOtpRes,
@@ -72,7 +72,7 @@ export class AuthService {
         { session },
       );
 
-      if (!current_user || current_user.isBlocked || current_user.isDeleted) {
+      if (!current_user || current_user.status === EUserStatus.ACTIVE) {
         await session.abortTransaction();
         return this.genericOtpResponse();
       }
@@ -156,7 +156,7 @@ export class AuthService {
       });
       const invalid = this.invalidOtpResponse();
 
-      if (!current_user || current_user.isBlocked || current_user.isDeleted) {
+      if (!current_user || current_user.status !== EUserStatus.ACTIVE) {
         return invalid;
       }
 

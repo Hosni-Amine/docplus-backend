@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { Reflector } from '@nestjs/core';
-import { ERole } from '../common';
+import { ERole, EUserStatus } from '../common';
 import { UserRepository } from '../user/user.repository';
 import { tokenUserFields } from '../user/user.fields';
 
@@ -43,8 +43,8 @@ export class AuthGuard implements CanActivate {
         { _id: payload.id },
         { select: tokenUserFields },
       );
-      if (!user || user.isBlocked || user.isDeleted) {
-        this.logger.error('User is missing, blocked, or deleted');
+      if (!user || user.status !== EUserStatus.ACTIVE) {
+        this.logger.error('User is missing, disabled, or deleted');
         return false;
       }
       if ((payload.tokenVersion ?? -1) !== (user.tokenVersion ?? 0)) {
