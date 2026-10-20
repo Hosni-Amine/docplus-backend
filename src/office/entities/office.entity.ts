@@ -38,3 +38,9 @@ export class Office extends AbstractDocument {
 }
 
 export const OfficeSchema = SchemaFactory.createForClass(Office);
+
+OfficeSchema.virtual('officeUsers', {
+  ref: 'User',
+  localField: '_id',
+  foreignField: 'officeId',
+});

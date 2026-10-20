@@ -1,10 +1,26 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EOfficeStatus, ERole } from '../common';
+import { EOfficeStatus, ERole, EUserStatus } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { OfficeRepository } from './office.repository';
 import { CreateOfficeInput } from './dto/create-office.input';
 import { UpdateOfficeInput } from './dto/update-office.input';
 import { Office } from './entities/office.entity';
+
+export type OfficeUser = {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  role?: ERole;
+  status?: EUserStatus;
+  avatarUrl?: string;
+  phone?: string;
+  address?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  zipCode?: string;
+};
 
 type Actor = {
   id?: string;
@@ -13,11 +29,11 @@ type Actor = {
 };
 
 export interface GetOfficeRes extends IBaseRes {
-  office: Office | null;
+  office: (Office & { officeUsers?: OfficeUser[] }) | null;
 }
 
 export interface GetOfficesRes extends IBaseRes {
-  offices: Office[];
+  offices: (Office & { officeUsers?: OfficeUser[] })[];
 }
 
 @Injectable()
@@ -47,7 +63,7 @@ export class OfficeService {
    */
   async getOffices(): Promise<GetOfficesRes> {
     try {
-      const offices = await this.officeRepository.find({});
+      const offices = await this.officeRepository.findAllWithUsers();
       return { status: 200, message: 'OFFICES_FOUND_SUCCESSFULLY', offices };
     } catch (error) {
       this.logger.error(error);
@@ -63,7 +79,7 @@ export class OfficeService {
       if (!this.canAccess(actor, id)) {
         return { status: 403, message: 'FORBIDDEN', office: null };
       }
-      const office = await this.officeRepository.findOne({ _id: id });
+      const office = await this.officeRepository.findOneWithUsers(id);
       if (!office) {
         return { status: 404, message: 'OFFICE_NOT_FOUND', office: null };
       }
