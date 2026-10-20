@@ -275,11 +275,14 @@ export class UserService {
   }
 
   /**
-   * Return every user, without OTP fields.
+   * Return the users of one office.
    */
-  async getAllUsers(): Promise<GetAllUsersRes> {
+  async getAllOfficeUsers(officeId: string): Promise<GetAllUsersRes> {
     try {
-      const users = await this.userRepository.find({}, publicUserFields);
+      const users = await this.userRepository.find(
+        { officeId, status: { $ne: EUserStatus.DELETED } },
+        publicUserFields,
+      );
       return {
         users,
         status: 200,
@@ -296,7 +299,7 @@ export class UserService {
   }
 
   /**
-   * Return every user matching the filter, without OTP fields.
+   * Return every admin user matching the filter.
    */
   async getAllAdmins(): Promise<GetAllUsersRes> {
     try {

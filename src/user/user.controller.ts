@@ -78,7 +78,8 @@ export class UserController {
     return await this.userService.updateUser(updateUserInput, user);
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN, ERole.SUPER_ADMIN)
   @Post('with-pagination')
   async getUsersWithPagination(
     @Body() getUsersInput: GetUsersInput,
@@ -86,14 +87,25 @@ export class UserController {
     return await this.userService.getUsersWithPagination(getUsersInput);
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.SUPER_ADMIN)
+  @Get('admins')
+  async getAllAdmins(): Promise<GetAllUsersRes> {
+    return await this.userService.getAllAdmins();
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN)
   @Get()
-  async getAllUsers(@CurrentUser() currentUser: User): Promise<GetAllUsersRes> {
-    if (currentUser.role === ERole.SUPER_ADMIN) {
-      return await this.userService.getAllAdmins();
-    } else {
-      return await this.userService.getAllUsers();
+  async getAllOfficeUsers(
+    @CurrentUser() currentUser: User,
+  ): Promise<GetAllUsersRes> {
+    if (!currentUser.officeId) {
+      return { users: [], status: 403, message: 'OFFICE_REQUIRED' };
     }
+    return await this.userService.getAllOfficeUsers(
+      currentUser.officeId.toString(),
+    );
   }
 
   @UseGuards(AuthGuard)
