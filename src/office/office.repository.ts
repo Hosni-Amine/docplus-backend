@@ -2,12 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
 import { AbstractRepository } from '../common';
+import { publicUserFields } from '../user/user.fields';
 import { Office } from './entities/office.entity';
 
 const officeUsersPopulate = {
   path: 'officeUsers',
-  select:
-    'firstName lastName email role status avatarUrl phone address country state city zipCode',
+  select: publicUserFields,
 };
 
 @Injectable()

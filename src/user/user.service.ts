@@ -15,7 +15,7 @@ import { UserRepository } from './user.repository';
 import { IBaseRes } from '../common/responses.dto';
 import { GetAllUsersRes, GetUserRes } from './user.controller';
 import { User } from './entities/user.entity';
-import { publicUserFields } from './user.fields';
+import { listUserFields, publicUserFields } from './user.fields';
 
 type Actor = {
   id?: string;
@@ -262,7 +262,7 @@ export class UserService {
         limit,
         skip,
         sort: { lastName: -1, firstName: -1 },
-        select: publicUserFields,
+        select: listUserFields,
       });
     } catch (error) {
       this.logger.error('Error getting users:', error);
@@ -291,7 +291,7 @@ export class UserService {
     try {
       const users = await this.userRepository.find(
         { officeId, role, status: { $ne: EUserStatus.DELETED } },
-        publicUserFields,
+        listUserFields,
       );
       return {
         users,
@@ -315,7 +315,7 @@ export class UserService {
     try {
       const query = { role: { $in: [ERole.ADMIN, ERole.SUPER_ADMIN] } };
 
-      const users = await this.userRepository.find(query, publicUserFields);
+      const users = await this.userRepository.find(query, listUserFields);
       return {
         users,
         status: 200,

@@ -1,4 +1,12 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { WorkingHoursDto } from './working-hours.dto';
 
 export class CreateOfficeInput {
   @IsString()
@@ -32,4 +40,9 @@ export class CreateOfficeInput {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => WorkingHoursDto)
+  workingHours?: WorkingHoursDto;
 }

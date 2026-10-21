@@ -41,6 +41,16 @@ export class OfficeController {
   }
 
   @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN)
+  @Get('me')
+  async getMyOffice(@CurrentUser() user: Actor): Promise<GetOfficeRes> {
+    if (!user.officeId) {
+      return { status: 404, message: 'OFFICE_NOT_FOUND', office: null };
+    }
+    return this.officeService.getOfficeById(user.officeId.toString(), user);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(ERole.SUPER_ADMIN)
   @Get(':id')
   async getOfficeById(

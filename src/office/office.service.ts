@@ -76,7 +76,7 @@ export class OfficeService {
    */
   async getOfficeById(id: string, actor: Actor): Promise<GetOfficeRes> {
     try {
-      if (!this.canAccess(actor, id)) {
+      if (!this.canAccessOffice(actor, id)) {
         return { status: 403, message: 'FORBIDDEN', office: null };
       }
       const office = await this.officeRepository.findOneWithUsers(id);
@@ -99,7 +99,7 @@ export class OfficeService {
     actor: Actor,
   ): Promise<GetOfficeRes> {
     try {
-      if (!this.canAccess(actor, input.id)) {
+      if (!this.canAccessOffice(actor, input.id)) {
         return { status: 403, message: 'FORBIDDEN', office: null };
       }
       const existing = await this.officeRepository.findOne({ _id: input.id });
@@ -143,7 +143,7 @@ export class OfficeService {
     }
   }
 
-  private canAccess(actor: Actor, officeId: string): boolean {
+  private canAccessOffice(actor: Actor, officeId: string): boolean {
     if (actor.role === ERole.SUPER_ADMIN) {
       return true;
     }

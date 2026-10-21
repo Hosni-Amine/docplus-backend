@@ -35,6 +35,21 @@ export class Office extends AbstractDocument {
 
   @Prop({ enum: EOfficeStatus, type: String, default: EOfficeStatus.ACTIVE })
   status: EOfficeStatus;
+
+  /**
+   * Weekly office hours. Times are "HH:mm" (24h).
+   * Example: { monday: { enabled: true, start: "09:00", end: "17:00" }, ... }
+   */
+  @Prop({ type: Object, default: null })
+  workingHours?: {
+    monday?: { enabled: boolean; start: string; end: string };
+    tuesday?: { enabled: boolean; start: string; end: string };
+    wednesday?: { enabled: boolean; start: string; end: string };
+    thursday?: { enabled: boolean; start: string; end: string };
+    friday?: { enabled: boolean; start: string; end: string };
+    saturday?: { enabled: boolean; start: string; end: string };
+    sunday?: { enabled: boolean; start: string; end: string };
+  } | null;
 }
 
 export const OfficeSchema = SchemaFactory.createForClass(Office);
