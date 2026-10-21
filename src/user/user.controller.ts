@@ -16,11 +16,20 @@ import { GetUsersInput } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update.user.input';
 import { IBaseRes } from '../common/responses.dto';
-import { ERole } from '../common/enums';
+import { ECareRecipientLabel, ERole } from '../common/enums';
 import { Roles } from '../decorators/roles.decorator';
 
 export interface GetUserRes extends IBaseRes {
   user: User;
+}
+
+export type MeUser = User & {
+  legalName?: string;
+  careRecipientLabel?: ECareRecipientLabel;
+};
+
+export interface GetMeRes extends IBaseRes {
+  user: MeUser | null;
 }
 
 export interface GetAllUsersRes extends IBaseRes {
@@ -33,7 +42,7 @@ export class UserController {
 
   @UseGuards(AuthGuard)
   @Get('me')
-  async findMe(@CurrentUser() user: User): Promise<GetUserRes> {
+  async findMe(@CurrentUser() user: MeUser): Promise<GetMeRes> {
     if (user) {
       return {
         message: 'USER_FOUND_SUCCESSFULLY',

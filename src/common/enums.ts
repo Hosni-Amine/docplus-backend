@@ -16,3 +16,9 @@ export enum EOfficeStatus {
   INACTIVE = 'inactive',
   DELETED = 'deleted',
 }
+
+/** UI label for role USER (therapy patient vs advocate client). */
+export enum ECareRecipientLabel {
+  PATIENT = 'patient',
+  CLIENT = 'client',
+}

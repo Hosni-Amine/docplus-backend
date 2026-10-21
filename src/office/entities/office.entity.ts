@@ -1,4 +1,8 @@
-import { AbstractDocument, EOfficeStatus } from '../../common';
+import {
+  AbstractDocument,
+  ECareRecipientLabel,
+  EOfficeStatus,
+} from '../../common';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 @Schema({
@@ -35,6 +39,16 @@ export class Office extends AbstractDocument {
 
   @Prop({ enum: EOfficeStatus, type: String, default: EOfficeStatus.ACTIVE })
   status: EOfficeStatus;
+
+  /**
+   * How this office refers to role USER in the UI (patient vs client).
+   */
+  @Prop({
+    enum: ECareRecipientLabel,
+    type: String,
+    default: ECareRecipientLabel.PATIENT,
+  })
+  careRecipientLabel: ECareRecipientLabel;
 
   /**
    * Weekly office hours. Times are "HH:mm" (24h).

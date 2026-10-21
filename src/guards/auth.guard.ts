@@ -8,7 +8,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { Reflector } from '@nestjs/core';
-import { ERole, EUserStatus } from '../common';
+import { ECareRecipientLabel, ERole, EUserStatus } from '../common';
+import { OfficeRepository } from '../office/office.repository';
 import { UserRepository } from '../user/user.repository';
 import { tokenUserFields } from '../user/user.fields';
 
@@ -20,6 +21,7 @@ export class AuthGuard implements CanActivate {
     private jwtService: JwtService,
     private config: ConfigService,
     private userRepository: UserRepository,
+    private officeRepository: OfficeRepository,
   ) {}
 
   /**
@@ -51,7 +53,27 @@ export class AuthGuard implements CanActivate {
         this.logger.error('Token has been revoked');
         return false;
       }
-      request.user = { id: user._id.toString(), ...user };
+
+      let legalName: string | undefined;
+      let careRecipientLabel: ECareRecipientLabel | undefined;
+      if (user.officeId) {
+        const office = await this.officeRepository.findOne(
+          { _id: user.officeId },
+          { select: 'legalName careRecipientLabel' },
+        );
+        if (office) {
+          legalName = office.legalName;
+          careRecipientLabel =
+            office.careRecipientLabel ?? ECareRecipientLabel.PATIENT;
+        }
+      }
+
+      request.user = {
+        id: user._id.toString(),
+        ...user,
+        legalName,
+        careRecipientLabel,
+      };
     } catch (err: any) {
       this.logger.error(err.message || 'Invalid token');
       return false;

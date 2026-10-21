@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EOfficeStatus, ERole, EUserStatus } from '../common';
+import {
+  ECareRecipientLabel,
+  EOfficeStatus,
+  ERole,
+  EUserStatus,
+} from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { OfficeRepository } from './office.repository';
 import { CreateOfficeInput } from './dto/create-office.input';
@@ -50,6 +55,8 @@ export class OfficeService {
       const office = await this.officeRepository.create({
         ...input,
         status: EOfficeStatus.ACTIVE,
+        careRecipientLabel:
+          input.careRecipientLabel ?? ECareRecipientLabel.PATIENT,
       });
       return { status: 201, message: 'OFFICE_CREATED_SUCCESSFULLY', office };
     } catch (error) {

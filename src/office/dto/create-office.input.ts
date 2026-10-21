@@ -1,11 +1,13 @@
 import { Type } from 'class-transformer';
 import {
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { ECareRecipientLabel } from '../../common';
 import { WorkingHoursDto } from './working-hours.dto';
 
 export class CreateOfficeInput {
@@ -40,6 +42,10 @@ export class CreateOfficeInput {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @IsEnum(ECareRecipientLabel)
+  careRecipientLabel?: ECareRecipientLabel;
 
   @IsOptional()
   @ValidateNested()
