@@ -1,14 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
-import { AbstractRepository } from '../common';
+import { AbstractRepository, ERole } from '../common';
 import { publicUserFields } from '../user/user.fields';
 import { Office } from './entities/office.entity';
 
 const officeUsersPopulate = {
   path: 'officeUsers',
   select: publicUserFields,
+  match: { role: ERole.ADMIN },
 };
+
+const officeCountPopulate = ['adminsCount', 'usersCount'];
 
 @Injectable()
 export class OfficeRepository extends AbstractRepository<Office> {
@@ -25,6 +28,7 @@ export class OfficeRepository extends AbstractRepository<Office> {
     return this.officeModel
       .find()
       .populate(officeUsersPopulate)
+      .populate(officeCountPopulate)
       .lean({ virtuals: true });
   }
 
@@ -32,6 +36,7 @@ export class OfficeRepository extends AbstractRepository<Office> {
     return this.officeModel
       .findOne({ _id: id })
       .populate(officeUsersPopulate)
+      .populate(officeCountPopulate)
       .lean({ virtuals: true });
   }
 }

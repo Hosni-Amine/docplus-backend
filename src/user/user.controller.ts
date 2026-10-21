@@ -14,6 +14,7 @@ import { User } from './entities/user.entity';
 import { GetUsersPaginator } from './dto/get-users-input';
 import { GetUsersInput } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
+import { ChangeOwnershipInput } from './dto/change-ownership.input';
 import { UpdateUserInput } from './dto/update.user.input';
 import { IBaseRes } from '../common/responses.dto';
 import { ECareRecipientLabel, ERole } from '../common/enums';
@@ -85,6 +86,16 @@ export class UserController {
     @CurrentUser() user: User,
   ): Promise<IBaseRes> {
     return await this.userService.updateUser(updateUserInput, user);
+  }
+
+  /** Super admin only: set or clear isOwner on an office ADMIN. */
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.SUPER_ADMIN)
+  @Patch('ownership')
+  async changeOwnership(
+    @Body() input: ChangeOwnershipInput,
+  ): Promise<IBaseRes> {
+    return await this.userService.changeOwnership(input);
   }
 
   @UseGuards(AuthGuard, RolesGuard)

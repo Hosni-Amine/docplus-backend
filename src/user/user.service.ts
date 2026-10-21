@@ -9,6 +9,7 @@ import {
 import { OfficeRepository } from '../office/office.repository';
 import { GetUsersInput, GetUsersPaginator } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
+import { ChangeOwnershipInput } from './dto/change-ownership.input';
 import { UpdateUserInput } from './dto/update.user.input';
 import { MailingService } from '../mailing/mailing.service';
 import { UserRepository } from './user.repository';
@@ -136,6 +137,33 @@ export class UserService {
       }
 
       return { status: 201, message: 'USER_CREATED_SUCCESSFULLY' };
+    } catch (error) {
+      this.logger.error(error);
+      return this.result(500, 'INTERNAL_SERVER_ERROR');
+    }
+  }
+
+  /**
+   * Super admin only: set or clear office ownership on an ADMIN user.
+   */
+  async changeOwnership(input: ChangeOwnershipInput): Promise<IBaseRes> {
+    try {
+      const existingUser = await this.userRepository.findOne({ _id: input.id });
+      if (!existingUser) {
+        this.logger.error(`User with ID ${input.id} not found`);
+        return this.result(404, 'USER_NOT_FOUND');
+      }
+
+      if (existingUser.role !== ERole.ADMIN) {
+        return this.result(400, 'INVALID_OWNERSHIP_TARGET');
+      }
+
+      await this.userRepository.findOneAndUpdate(
+        { _id: input.id },
+        { isOwner: !!input.isOwner },
+      );
+
+      return { status: 200, message: 'OWNERSHIP_UPDATED_SUCCESSFULLY' };
     } catch (error) {
       this.logger.error(error);
       return this.result(500, 'INTERNAL_SERVER_ERROR');

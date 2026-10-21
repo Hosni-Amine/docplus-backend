@@ -2,6 +2,8 @@ import {
   AbstractDocument,
   ECareRecipientLabel,
   EOfficeStatus,
+  ERole,
+  EUserStatus,
 } from '../../common';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
@@ -72,4 +74,20 @@ OfficeSchema.virtual('officeUsers', {
   ref: 'User',
   localField: '_id',
   foreignField: 'officeId',
+});
+
+OfficeSchema.virtual('adminsCount', {
+  ref: 'User',
+  localField: '_id',
+  foreignField: 'officeId',
+  count: true,
+  match: { role: ERole.ADMIN, status: { $ne: EUserStatus.DELETED } },
+});
+
+OfficeSchema.virtual('usersCount', {
+  ref: 'User',
+  localField: '_id',
+  foreignField: 'officeId',
+  count: true,
+  match: { role: ERole.USER, status: { $ne: EUserStatus.DELETED } },
 });

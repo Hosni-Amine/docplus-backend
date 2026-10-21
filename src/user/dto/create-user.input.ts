@@ -53,6 +53,10 @@ export class CreateUserInput {
   role: ERole;
 
   @IsOptional()
+  @IsString()
+  officeStaffRole?: string;
+
+  @IsOptional()
   @IsMongoId()
   officeId?: string;
 }

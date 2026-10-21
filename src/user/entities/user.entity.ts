@@ -31,6 +31,12 @@ export class User extends AbstractDocument {
   @Prop({ enum: ERole, type: String })
   role: ERole;
 
+  @Prop({ type: String, default: null })
+  officeStaffRole?: string | null;
+
+  @Prop({ default: false })
+  isOwner?: boolean;
+
   @Prop({ enum: EUserStatus, type: String, default: EUserStatus.ACTIVE })
   status: EUserStatus;
 

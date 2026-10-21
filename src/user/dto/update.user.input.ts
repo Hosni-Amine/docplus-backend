@@ -6,7 +6,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { OmitType, PartialType } from '@nestjs/swagger';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { EUserStatus } from '../../common';
 import { CreateUserInput } from './create-user.input';
 
