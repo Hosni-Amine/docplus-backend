@@ -229,7 +229,7 @@ export class UserService {
         },
       );
 
-      return { status: 200, message: 'USER_UPDATED_SUCCESSFULLY' };
+      return { status: 200, message: 'USER_DELETED_SUCCESSFULLY' };
     } catch (error) {
       this.logger.error(error);
       return this.result(500, 'INTERNAL_SERVER_ERROR');
