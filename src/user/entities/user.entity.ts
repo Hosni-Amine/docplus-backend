@@ -75,6 +75,9 @@ export class User extends AbstractDocument {
   @Prop()
   about?: string;
 
+  @Prop()
+  notes?: string;
+
   @Prop({ default: false })
   isPublic: boolean;
 

@@ -31,6 +31,10 @@ export class UpdateUserInput extends PartialType(
   about?: string;
 
   @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
   @IsBoolean()
   isPublic?: boolean;
 

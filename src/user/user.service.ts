@@ -88,8 +88,7 @@ export class UserService {
   }
 
   /**
-   * Create a USER in an office.
-   * Admin passes officeId. Office admin uses their own office.
+   * Create a USER or ADMIN in the actor's office.
    */
   async createUser(
     createUserInput: CreateUserInput,
@@ -106,14 +105,11 @@ export class UserService {
         return this.result(400, 'EMAIL_ALREADY_EXISTED');
       }
 
-      const { officeId: requestedOfficeId, role, ...rest } = createUserInput;
+      const { role, ...rest } = createUserInput;
       if (role !== ERole.USER && role !== ERole.ADMIN) {
         return this.result(403, 'FORBIDDEN');
       }
-      const officeId =
-        actor.role === ERole.ADMIN
-          ? actor.officeId?.toString()
-          : requestedOfficeId;
+      const officeId = actor.officeId?.toString();
 
       if (!officeId) {
         return this.result(400, 'OFFICE_REQUIRED');
@@ -275,12 +271,26 @@ export class UserService {
   }
 
   /**
-   * Return the users of one office.
+   * Return office users (role USER).
    */
-  async getAllOfficeUsers(officeId: string): Promise<GetAllUsersRes> {
+  async getOfficeUsers(officeId: string): Promise<GetAllUsersRes> {
+    return this.getOfficeUsersByRole(officeId, ERole.USER);
+  }
+
+  /**
+   * Return office admins (role ADMIN).
+   */
+  async getOfficeAdmins(officeId: string): Promise<GetAllUsersRes> {
+    return this.getOfficeUsersByRole(officeId, ERole.ADMIN);
+  }
+
+  private async getOfficeUsersByRole(
+    officeId: string,
+    role: ERole,
+  ): Promise<GetAllUsersRes> {
     try {
       const users = await this.userRepository.find(
-        { officeId, status: { $ne: EUserStatus.DELETED } },
+        { officeId, role, status: { $ne: EUserStatus.DELETED } },
         publicUserFields,
       );
       return {

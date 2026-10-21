@@ -94,16 +94,32 @@ export class UserController {
     return await this.userService.getAllAdmins();
   }
 
+  /** Office admins (role ADMIN). */
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(ERole.ADMIN)
-  @Get()
-  async getAllOfficeUsers(
+  @Get('office-admins')
+  async getOfficeAdmins(
     @CurrentUser() currentUser: User,
   ): Promise<GetAllUsersRes> {
     if (!currentUser.officeId) {
       return { users: [], status: 403, message: 'OFFICE_REQUIRED' };
     }
-    return await this.userService.getAllOfficeUsers(
+    return await this.userService.getOfficeAdmins(
+      currentUser.officeId.toString(),
+    );
+  }
+
+  /** Office users (role USER). */
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN)
+  @Get()
+  async getOfficeUsers(
+    @CurrentUser() currentUser: User,
+  ): Promise<GetAllUsersRes> {
+    if (!currentUser.officeId) {
+      return { users: [], status: 403, message: 'OFFICE_REQUIRED' };
+    }
+    return await this.userService.getOfficeUsers(
       currentUser.officeId.toString(),
     );
   }

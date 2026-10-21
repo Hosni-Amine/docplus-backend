@@ -44,6 +44,10 @@ export class CreateUserInput {
   @IsString()
   zipCode?: string;
 
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
   @IsNotEmpty()
   @IsString()
   role: ERole;

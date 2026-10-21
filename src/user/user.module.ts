@@ -15,5 +15,6 @@ import { OfficeModule } from '../office/office.module';
   ],
   controllers: [UserController],
   providers: [UserService, UserRepository],
+  exports: [UserRepository, UserService],
 })
 export class UserModule {}

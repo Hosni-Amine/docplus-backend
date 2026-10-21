@@ -9,39 +9,28 @@ import { AbstractDocument } from '../../common';
     updatedAt: 'updated_at',
   },
 })
-export class Patient extends AbstractDocument {
+export class Appointment extends AbstractDocument {
   @Prop({ required: true })
-  firstName: string;
-
-  @Prop({ required: true })
-  lastName: string;
-
-  @Prop({ type: [String], default: [] })
-  midNames?: string[];
+  title: string;
 
   @Prop()
-  email?: string;
+  description?: string;
 
   @Prop()
-  phone?: string;
+  color?: string;
 
-  @Prop()
-  address?: string;
+  @Prop({ type: Boolean, default: false })
+  allDay: boolean;
 
-  @Prop()
-  country?: string;
+  @Prop({ type: Date, required: true })
+  start: Date;
 
-  @Prop()
-  state?: string;
+  @Prop({ type: Date, required: true })
+  end: Date;
 
-  @Prop()
-  city?: string;
-
-  @Prop()
-  zipCode?: string;
-
-  @Prop()
-  notes?: string;
+  /** Attendee user (role USER). */
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User', required: true })
+  userId: Types.ObjectId;
 
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Office', required: true })
   officeId: Types.ObjectId;
@@ -50,4 +39,4 @@ export class Patient extends AbstractDocument {
   isDeleted: boolean;
 }
 
-export const PatientSchema = SchemaFactory.createForClass(Patient);
+export const AppointmentSchema = SchemaFactory.createForClass(Appointment);
