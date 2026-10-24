@@ -1,7 +1,6 @@
 import {
   IsArray,
   IsBoolean,
-  IsDateString,
   IsEmail,
   IsMongoId,
   IsNotEmpty,
@@ -13,10 +12,6 @@ export class CreateFolderInput {
   @IsString()
   @IsNotEmpty()
   title: string;
-
-  @IsDateString()
-  @IsNotEmpty()
-  date: string;
 
   @IsOptional()
   @IsString()
@@ -31,12 +26,6 @@ export class CreateFolderInput {
   @IsOptional()
   @IsMongoId()
   appointmentId?: string;
-
-  /** URLs returned by POST /api/upload/file. */
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  files?: string[];
 
   /** Emails the folder is shared with. */
   @IsOptional()

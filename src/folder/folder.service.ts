@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { deleteUploadedFile, ERole } from '../common';
+import { ERole } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { CreateFolderInput } from './dto/create-folder.input';
 import { FavoriteFolderInput } from './dto/favorite-folder.input';
@@ -46,7 +46,6 @@ export class FolderService {
       const actorId = new Types.ObjectId(actor.id);
       const folder = await this.folderRepository.create({
         title: input.title,
-        date: new Date(input.date),
         notes: input.notes,
         userId: new Types.ObjectId(input.userId),
         officeId: new Types.ObjectId(officeId),
@@ -55,7 +54,6 @@ export class FolderService {
         appointmentId: input.appointmentId
           ? new Types.ObjectId(input.appointmentId)
           : undefined,
-        files: input.files ?? [],
         shared: input.shared ?? [],
         tags: input.tags ?? [],
         isFavorited: input.isFavorited ?? false,
@@ -135,7 +133,6 @@ export class FolderService {
 
   /**
    * Update a folder in the actor's office.
-   * Sending files replaces the URL list. Removed uploads are deleted.
    */
   async updateFolder(
     input: UpdateFolderInput,
@@ -151,14 +148,7 @@ export class FolderService {
         return { status: 404, message: 'FOLDER_NOT_FOUND', folder: null };
       }
 
-      const {
-        id,
-        userId: nextUserId,
-        appointmentId,
-        date,
-        files,
-        ...rest
-      } = input;
+      const { id, userId: nextUserId, appointmentId, ...rest } = input;
       const updates: Record<string, unknown> = {
         ...rest,
         lastUpdatedBy: new Types.ObjectId(actor.id),
@@ -169,19 +159,6 @@ export class FolderService {
       if (appointmentId) {
         updates.appointmentId = new Types.ObjectId(appointmentId);
       }
-      if (date) {
-        updates.date = new Date(date);
-      }
-      if (files) {
-        const removed = (existing.files ?? []).filter(
-          (url) => !files.includes(url),
-        );
-        if (removed.length) {
-          await deleteUploadedFile(removed);
-        }
-        updates.files = files;
-      }
-
       const folder = await this.folderRepository.findOneAndUpdate(
         { _id: id },
         updates,

@@ -7,6 +7,7 @@ import { UserModule } from './user/user.module';
 import { OfficeModule } from './office/office.module';
 import { AppointmentModule } from './appointment/appointment.module';
 import { FolderModule } from './folder/folder.module';
+import { DocumentModule } from './document/document.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { DatabaseModule } from './common/database/database.module';
@@ -25,6 +26,7 @@ import { JwtSignOptions } from '@nestjs/jwt';
     OfficeModule,
     AppointmentModule,
     FolderModule,
+    DocumentModule,
     MailingModule,
     UploadModule,
     ConfigModule.forRoot({

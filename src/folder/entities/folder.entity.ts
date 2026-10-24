@@ -12,10 +12,6 @@ import { AbstractDocument } from '../../common';
 export class Folder extends AbstractDocument {
   @Prop({ required: true })
   title: string;
-
-  @Prop({ type: Date, required: true })
-  date: Date;
-
   @Prop()
   notes?: string;
 
@@ -35,10 +31,6 @@ export class Folder extends AbstractDocument {
   /** Set when the folder comes from a visit. */
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Appointment' })
   appointmentId?: Types.ObjectId;
-
-  /** URLs returned by the upload route. */
-  @Prop({ type: [String], default: [] })
-  files: string[];
 
   /** Emails the folder is shared with. */
   @Prop({ type: [String], default: [] })
