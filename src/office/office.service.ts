@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Types } from 'mongoose';
 import {
+  deleteUploadedFile,
   ECareRecipientLabel,
   EContractStatus,
   EOfficePlan,
@@ -51,11 +52,11 @@ export type ContractView = Contract & { displayStatus: ContractDisplayStatus };
 
 export interface GetOfficeRes extends IBaseRes {
   office:
-    | (Office & {
-        officeUsers?: OfficeUser[];
-        currentContract?: ContractView | null;
-      })
-    | null;
+  | (Office & {
+    officeUsers?: OfficeUser[];
+    currentContract?: ContractView | null;
+  })
+  | null;
 }
 
 export interface GetOfficesRes extends IBaseRes {
@@ -77,7 +78,7 @@ export class OfficeService {
   constructor(
     private readonly officeRepository: OfficeRepository,
     private readonly contractRepository: OfficeContractRepository,
-  ) {}
+  ) { }
 
   /**
    * Create an office. Only the platform admin calls this.
@@ -296,6 +297,15 @@ export class OfficeService {
             message: 'CONTRACT_PERIOD_OVERLAPS',
             contract: null,
           };
+        }
+      }
+
+      if (input.documents !== undefined) {
+        const removed = (existing.documents ?? []).filter(
+          (doc) => !input.documents!.includes(doc),
+        );
+        if (removed.length) {
+          await deleteUploadedFile(removed);
         }
       }
 
