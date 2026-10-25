@@ -8,6 +8,7 @@ import { OfficeModule } from './office/office.module';
 import { AppointmentModule } from './appointment/appointment.module';
 import { FolderModule } from './folder/folder.module';
 import { DocumentModule } from './document/document.module';
+import { ChatModule } from './chat/chat.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { DatabaseModule } from './common/database/database.module';
@@ -27,6 +28,7 @@ import { JwtSignOptions } from '@nestjs/jwt';
     AppointmentModule,
     FolderModule,
     DocumentModule,
+    ChatModule,
     MailingModule,
     UploadModule,
     ConfigModule.forRoot({
