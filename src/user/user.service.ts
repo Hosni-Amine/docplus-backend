@@ -21,6 +21,7 @@ import { listUserFields, publicUserFields } from './user.fields';
 type Actor = {
   id?: string;
   role?: ERole;
+  isOwner?: boolean;
   officeId?: { toString(): string } | string;
 };
 
@@ -110,6 +111,9 @@ export class UserService {
       if (role !== ERole.USER && role !== ERole.ADMIN) {
         return this.result(403, 'FORBIDDEN');
       }
+      if (role === ERole.ADMIN && !actor.isOwner) {
+        return this.result(403, 'FORBIDDEN');
+      }
       const officeId = actor.officeId?.toString();
 
       if (!officeId) {
@@ -193,6 +197,16 @@ export class UserService {
         return this.result(404, 'USER_NOT_FOUND');
       }
 
+      const isSelf = actor?.id === id;
+      if (
+        !isSuperAdmin &&
+        existingUser.role === ERole.ADMIN &&
+        !isSelf &&
+        !actor.isOwner
+      ) {
+        return this.result(403, 'FORBIDDEN');
+      }
+
       if (rest.email && (await this.emailTaken(rest.email, id))) {
         this.logger.error(`This mail address ${rest.email} is already in use`);
         return this.result(400, 'EMAIL_ALREADY_IN_USE');
@@ -237,12 +251,20 @@ export class UserService {
   /**
    * Soft-delete a user. The route is already limited to admins.
    */
-  async deleteUser(id: string): Promise<IBaseRes> {
+  async deleteUser(id: string, actor: Actor): Promise<IBaseRes> {
     try {
       const existingUser = await this.userRepository.findOne({ _id: id });
       if (!existingUser) {
         this.logger.error(`User with ID ${id} not found`);
         return this.result(404, 'USER_NOT_FOUND');
+      }
+
+      if (
+        actor.role !== ERole.SUPER_ADMIN &&
+        existingUser.role === ERole.ADMIN &&
+        !actor.isOwner
+      ) {
+        return this.result(403, 'FORBIDDEN');
       }
 
       await this.userRepository.findOneAndUpdate(

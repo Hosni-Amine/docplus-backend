@@ -22,3 +22,14 @@ export enum ECareRecipientLabel {
   PATIENT = 'patient',
   CLIENT = 'client',
 }
+
+export enum EOfficePlan {
+  BASIC = 'basic',
+  STARTER = 'starter',
+  PREMIUM = 'premium',
+}
+
+export enum EContractStatus {
+  ACTIVE = 'active',
+  CANCELLED = 'cancelled',
+}

@@ -153,7 +153,10 @@ export class UserController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(ERole.SUPER_ADMIN, ERole.ADMIN)
   @Patch('delete/:id')
-  async deleteUser(@Param('id') id: string): Promise<IBaseRes> {
-    return await this.userService.deleteUser(id);
+  async deleteUser(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ): Promise<IBaseRes> {
+    return await this.userService.deleteUser(id, user);
   }
 }

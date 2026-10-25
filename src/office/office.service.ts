@@ -1,15 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Types } from 'mongoose';
 import {
   ECareRecipientLabel,
+  EContractStatus,
+  EOfficePlan,
   EOfficeStatus,
   ERole,
   EUserStatus,
 } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { OfficeRepository } from './office.repository';
+import { OfficeContractRepository } from './office-contract.repository';
 import { CreateOfficeInput } from './dto/create-office.input';
 import { UpdateOfficeInput } from './dto/update-office.input';
+import { CreateContractInput } from './dto/create-contract.input';
+import { UpdateContractInput } from './dto/update-contract.input';
 import { Office } from './entities/office.entity';
+import { Contract } from './entities/contract.entity';
 
 export type OfficeUser = {
   _id: string;
@@ -30,22 +37,47 @@ export type OfficeUser = {
 type Actor = {
   id?: string;
   role?: ERole;
+  isOwner?: boolean;
   officeId?: { toString(): string } | string;
 };
 
+export type ContractDisplayStatus =
+  | 'upcoming'
+  | 'current'
+  | 'expired'
+  | 'cancelled';
+
+export type ContractView = Contract & { displayStatus: ContractDisplayStatus };
+
 export interface GetOfficeRes extends IBaseRes {
-  office: (Office & { officeUsers?: OfficeUser[] }) | null;
+  office:
+    | (Office & {
+        officeUsers?: OfficeUser[];
+        currentContract?: ContractView | null;
+      })
+    | null;
 }
 
 export interface GetOfficesRes extends IBaseRes {
   offices: (Office & { officeUsers?: OfficeUser[] })[];
 }
 
+export interface GetContractsRes extends IBaseRes {
+  contracts: ContractView[];
+}
+
+export interface GetContractRes extends IBaseRes {
+  contract: ContractView | null;
+}
+
 @Injectable()
 export class OfficeService {
   private readonly logger = new Logger(OfficeService.name);
 
-  constructor(private readonly officeRepository: OfficeRepository) {}
+  constructor(
+    private readonly officeRepository: OfficeRepository,
+    private readonly contractRepository: OfficeContractRepository,
+  ) {}
 
   /**
    * Create an office. Only the platform admin calls this.
@@ -90,7 +122,12 @@ export class OfficeService {
       if (!office) {
         return { status: 404, message: 'OFFICE_NOT_FOUND', office: null };
       }
-      return { status: 200, message: 'OFFICE_FOUND_SUCCESSFULLY', office };
+      const currentContract = await this.findCurrentContract(id);
+      return {
+        status: 200,
+        message: 'OFFICE_FOUND_SUCCESSFULLY',
+        office: { ...office, currentContract },
+      };
     } catch (error) {
       this.logger.error(error);
       return { status: 500, message: 'INTERNAL_SERVER_ERROR', office: null };
@@ -99,14 +136,14 @@ export class OfficeService {
 
   /**
    * Update an office. The platform admin can update any office.
-   * An office admin can update only their own.
+   * Only the office owner can update their own office.
    */
   async updateOffice(
     input: UpdateOfficeInput,
     actor: Actor,
   ): Promise<GetOfficeRes> {
     try {
-      if (!this.canAccessOffice(actor, input.id)) {
+      if (!this.canManageOffice(actor, input.id)) {
         return { status: 403, message: 'FORBIDDEN', office: null };
       }
       const existing = await this.officeRepository.findOne({ _id: input.id });
@@ -150,10 +187,222 @@ export class OfficeService {
     }
   }
 
+  async getContracts(officeId: string): Promise<GetContractsRes> {
+    try {
+      const office = await this.officeRepository.findOne({ _id: officeId });
+      if (!office) {
+        return { status: 404, message: 'OFFICE_NOT_FOUND', contracts: [] };
+      }
+      const contracts = await this.contractRepository.findByOffice(officeId);
+      return {
+        status: 200,
+        message: 'CONTRACTS_FOUND_SUCCESSFULLY',
+        contracts: contracts.map((contract) => this.toContractView(contract)),
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return { status: 500, message: 'INTERNAL_SERVER_ERROR', contracts: [] };
+    }
+  }
+
+  async createContract(
+    officeId: string,
+    input: CreateContractInput,
+  ): Promise<GetContractRes> {
+    try {
+      const office = await this.officeRepository.findOne({ _id: officeId });
+      if (!office) {
+        return { status: 404, message: 'OFFICE_NOT_FOUND', contract: null };
+      }
+
+      const startDate = this.toDate(input.startDate);
+      const endDate = this.toDate(input.endDate);
+      if (!startDate || !endDate || startDate > endDate) {
+        return {
+          status: 400,
+          message: 'INVALID_CONTRACT_DATES',
+          contract: null,
+        };
+      }
+
+      const overlapping = await this.hasOverlap(officeId, startDate, endDate);
+      if (overlapping) {
+        return {
+          status: 400,
+          message: 'CONTRACT_PERIOD_OVERLAPS',
+          contract: null,
+        };
+      }
+
+      const plan = input.plan ?? EOfficePlan.BASIC;
+      const contract = await this.contractRepository.create({
+        officeId: new Types.ObjectId(officeId),
+        startDate,
+        endDate,
+        status: EContractStatus.ACTIVE,
+        plan,
+        notes: input.notes,
+        documents: input.documents ?? [],
+      });
+
+      return {
+        status: 201,
+        message: 'CONTRACT_CREATED_SUCCESSFULLY',
+        contract: this.toContractView(contract),
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return { status: 500, message: 'INTERNAL_SERVER_ERROR', contract: null };
+    }
+  }
+
+  async updateContract(
+    contractId: string,
+    input: UpdateContractInput,
+  ): Promise<GetContractRes> {
+    try {
+      const existing = await this.contractRepository.findOne({
+        _id: contractId,
+      });
+      if (!existing) {
+        return { status: 404, message: 'CONTRACT_NOT_FOUND', contract: null };
+      }
+
+      const startDate = input.startDate
+        ? this.toDate(input.startDate)
+        : existing.startDate;
+      const endDate = input.endDate
+        ? this.toDate(input.endDate)
+        : existing.endDate;
+      if (!startDate || !endDate || startDate > endDate) {
+        return {
+          status: 400,
+          message: 'INVALID_CONTRACT_DATES',
+          contract: null,
+        };
+      }
+
+      const nextStatus = input.status ?? existing.status;
+      if (nextStatus === EContractStatus.ACTIVE) {
+        const overlapping = await this.hasOverlap(
+          existing.officeId.toString(),
+          startDate,
+          endDate,
+          contractId,
+        );
+        if (overlapping) {
+          return {
+            status: 400,
+            message: 'CONTRACT_PERIOD_OVERLAPS',
+            contract: null,
+          };
+        }
+      }
+
+      const contract = await this.contractRepository.findOneAndUpdate(
+        { _id: contractId },
+        {
+          startDate,
+          endDate,
+          ...(input.plan !== undefined && { plan: input.plan }),
+          ...(input.documents !== undefined && { documents: input.documents }),
+          ...(input.notes !== undefined && { notes: input.notes }),
+          ...(input.status && { status: input.status }),
+        },
+      );
+
+      return {
+        status: 200,
+        message: 'CONTRACT_UPDATED_SUCCESSFULLY',
+        contract: contract ? this.toContractView(contract) : null,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return { status: 500, message: 'INTERNAL_SERVER_ERROR', contract: null };
+    }
+  }
+
+  private async findCurrentContract(
+    officeId: string,
+  ): Promise<ContractView | null> {
+    const contracts = await this.contractRepository.findByOffice(officeId);
+    if (!contracts.length) {
+      return null;
+    }
+    const views = contracts.map((contract) => this.toContractView(contract));
+    return (
+      views.find((contract) => contract.displayStatus === 'current') ??
+      views.find((contract) => contract.displayStatus === 'upcoming') ??
+      views[0]
+    );
+  }
+
+  private async hasOverlap(
+    officeId: string,
+    startDate: Date,
+    endDate: Date,
+    exceptId?: string,
+  ): Promise<boolean> {
+    const contracts = await this.contractRepository.findByOffice(officeId);
+    return contracts.some((contract) => {
+      if (exceptId && contract._id.toString() === exceptId) {
+        return false;
+      }
+      if (contract.status === EContractStatus.CANCELLED) {
+        return false;
+      }
+      return contract.startDate <= endDate && startDate <= contract.endDate;
+    });
+  }
+
+  private toContractView(contract: Contract): ContractView {
+    return {
+      ...contract,
+      displayStatus: this.displayStatus(contract),
+    };
+  }
+
+  private displayStatus(contract: Contract): ContractDisplayStatus {
+    if (contract.status === EContractStatus.CANCELLED) {
+      return 'cancelled';
+    }
+    const today = this.startOfDay(new Date());
+    const start = this.startOfDay(contract.startDate);
+    const end = this.startOfDay(contract.endDate);
+    if (today < start) {
+      return 'upcoming';
+    }
+    if (today > end) {
+      return 'expired';
+    }
+    return 'current';
+  }
+
+  private toDate(value: string): Date | null {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    return this.startOfDay(date);
+  }
+
+  private startOfDay(date: Date): Date {
+    return new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+    );
+  }
+
   private canAccessOffice(actor: Actor, officeId: string): boolean {
     if (actor.role === ERole.SUPER_ADMIN) {
       return true;
     }
     return actor.officeId?.toString() === officeId;
+  }
+
+  private canManageOffice(actor: Actor, officeId: string): boolean {
+    if (actor.role === ERole.SUPER_ADMIN) {
+      return true;
+    }
+    return !!actor.isOwner && actor.officeId?.toString() === officeId;
   }
 }

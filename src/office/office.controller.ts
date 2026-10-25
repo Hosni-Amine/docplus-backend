@@ -12,9 +12,17 @@ import { CurrentUser } from '../decorators';
 import { Roles } from '../decorators/roles.decorator';
 import { ERole } from '../common';
 import { IBaseRes } from '../common/responses.dto';
-import { GetOfficeRes, GetOfficesRes, OfficeService } from './office.service';
+import {
+  GetContractRes,
+  GetContractsRes,
+  GetOfficeRes,
+  GetOfficesRes,
+  OfficeService,
+} from './office.service';
 import { CreateOfficeInput } from './dto/create-office.input';
 import { UpdateOfficeInput } from './dto/update-office.input';
+import { CreateContractInput } from './dto/create-contract.input';
+import { UpdateContractInput } from './dto/update-contract.input';
 
 type Actor = {
   id?: string;
@@ -48,6 +56,33 @@ export class OfficeController {
       return { status: 404, message: 'OFFICE_NOT_FOUND', office: null };
     }
     return this.officeService.getOfficeById(user.officeId.toString(), user);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.SUPER_ADMIN)
+  @Get(':id/contracts')
+  async getContracts(@Param('id') id: string): Promise<GetContractsRes> {
+    return this.officeService.getContracts(id);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.SUPER_ADMIN)
+  @Post(':id/contracts')
+  async createContract(
+    @Param('id') id: string,
+    @Body() input: CreateContractInput,
+  ): Promise<GetContractRes> {
+    return this.officeService.createContract(id, input);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.SUPER_ADMIN)
+  @Patch('contracts/:contractId')
+  async updateContract(
+    @Param('contractId') contractId: string,
+    @Body() input: UpdateContractInput,
+  ): Promise<GetContractRes> {
+    return this.officeService.updateContract(contractId, input);
   }
 
   @UseGuards(AuthGuard, RolesGuard)
