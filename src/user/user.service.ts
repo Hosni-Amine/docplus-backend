@@ -321,28 +321,22 @@ export class UserService {
   }
 
   /**
-   * Return office users (role USER).
+   * Return office users, optionally filtered by role (e.g. USER, ADMIN).
+   * If role is omitted, returns all non-deleted users for the office.
    */
-  async getOfficeUsers(officeId: string): Promise<GetAllUsersRes> {
-    return this.getOfficeUsersByRole(officeId, ERole.USER);
-  }
-
-  /**
-   * Return office admins (role ADMIN).
-   */
-  async getOfficeAdmins(officeId: string): Promise<GetAllUsersRes> {
-    return this.getOfficeUsersByRole(officeId, ERole.ADMIN);
-  }
-
-  private async getOfficeUsersByRole(
+  async getOfficeUsers(
     officeId: string,
-    role: ERole,
+    role?: ERole,
   ): Promise<GetAllUsersRes> {
     try {
-      const users = await this.userRepository.find(
-        { officeId, role, status: { $ne: EUserStatus.DELETED } },
-        listUserFields,
-      );
+      const query: Record<string, any> = {
+        officeId,
+        status: { $ne: EUserStatus.DELETED },
+      };
+      if (role) {
+        query.role = role;
+      }
+      const users = await this.userRepository.find(query, listUserFields);
       return {
         users,
         status: 200,

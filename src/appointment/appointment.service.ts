@@ -70,6 +70,7 @@ export class AppointmentService {
         start: new Date(input.start),
         end: new Date(input.end),
         userId: new Types.ObjectId(input.userId),
+        adminId: input.adminId ? new Types.ObjectId(input.adminId) : undefined,
         officeId: new Types.ObjectId(officeId),
         isDeleted: false,
       });
@@ -199,10 +200,20 @@ export class AppointmentService {
         }
       }
 
-      const { id, userId, start: startInput, end: endInput, ...rest } = input;
+      const {
+        id,
+        userId,
+        adminId,
+        start: startInput,
+        end: endInput,
+        ...rest
+      } = input;
       const updates: Record<string, unknown> = { ...rest };
       if (userId) {
         updates.userId = new Types.ObjectId(userId);
+      }
+      if (adminId) {
+        updates.adminId = new Types.ObjectId(adminId);
       }
       if (startInput) {
         updates.start = new Date(startInput);

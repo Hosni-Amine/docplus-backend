@@ -6,6 +6,7 @@ import {
   UseGuards,
   Post,
   Param,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard, RolesGuard } from '../guards';
@@ -114,33 +115,20 @@ export class UserController {
     return await this.userService.getAllAdmins();
   }
 
-  /** Office admins (role ADMIN). */
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(ERole.ADMIN)
-  @Get('office-admins')
-  async getOfficeAdmins(
-    @CurrentUser() currentUser: User,
-  ): Promise<GetAllUsersRes> {
-    if (!currentUser.officeId) {
-      return { users: [], status: 403, message: 'OFFICE_REQUIRED' };
-    }
-    return await this.userService.getOfficeAdmins(
-      currentUser.officeId.toString(),
-    );
-  }
-
-  /** Office users (role USER). */
+  /** Office users, filtered by role. */
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(ERole.ADMIN)
   @Get()
   async getOfficeUsers(
     @CurrentUser() currentUser: User,
+    @Query('role') role?: ERole,
   ): Promise<GetAllUsersRes> {
     if (!currentUser.officeId) {
       return { users: [], status: 403, message: 'OFFICE_REQUIRED' };
     }
     return await this.userService.getOfficeUsers(
       currentUser.officeId.toString(),
+      role,
     );
   }
 
