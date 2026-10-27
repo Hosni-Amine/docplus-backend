@@ -22,7 +22,7 @@ export class AuthGuard implements CanActivate {
     private config: ConfigService,
     private userRepository: UserRepository,
     private officeRepository: OfficeRepository,
-  ) {}
+  ) { }
 
   /**
    * Accept the request only when the bearer token is a valid HS256 JWT
@@ -41,6 +41,33 @@ export class AuthGuard implements CanActivate {
         secret: this.config.getOrThrow('JWT_SECRET'),
         algorithms: ['HS256'],
       });
+      // Single-purpose tokens (appointment invites) are signed with the same
+      // secret and must never stand in for a session token.
+      // Exception: dedicated 'video_session' tokens are permitted exclusively
+      // for retrieving the consultation token for their specific appointment.
+      if (payload.purpose) {
+        const fullUrl = request.originalUrl || request.url || request.path || '';
+        const isConsultationTokenRoute =
+          request.method === 'GET' && fullUrl.includes('/consultation/token');
+
+        const routeAppointmentId =
+          request.params?.id ||
+          (fullUrl.match(/\/appointment\/([^/?]+)\/consultation\/token/) || [])[1];
+
+        if (
+          payload.purpose === 'video_session' &&
+          isConsultationTokenRoute &&
+          payload.appointmentId &&
+          payload.appointmentId === routeAppointmentId
+        ) {
+          // Permitted for video session access
+        } else {
+          this.logger.error(
+            `Token purpose '${payload.purpose}' is not valid for route '${fullUrl}' (appointmentId: ${payload.appointmentId}, routeId: ${routeAppointmentId})`,
+          );
+          return false;
+        }
+      }
       const user = await this.userRepository.findOne(
         { _id: payload.id },
         { select: tokenUserFields },
@@ -92,7 +119,7 @@ export class AuthGuard implements CanActivate {
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private reflector: Reflector) { }
   /**
    * Allow the request when the user's role is one of the roles set on the route.
    */

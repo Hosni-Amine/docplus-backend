@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import * as fs from 'node:fs/promises';
 import Handlebars from 'handlebars';
+import { buildFrontendUrl } from '../common';
 
 const customHandlebars = Handlebars.create();
 export enum MailTemplate {
@@ -10,6 +11,7 @@ export enum MailTemplate {
   OtpCodeEmail = 'otp-code-email.hbs',
   RequestCreated = 'request-created.hbs',
   RequestCompleted = 'request-completed.hbs',
+  AppointmentInvitation = 'appointment-invitation.hbs',
 }
 
 @Injectable()
@@ -117,7 +119,10 @@ export class MailingService {
         templatePath: MailTemplate.WelcomeEmail,
         context: {
           fullname,
-          url: this.configService.get<string>('FRONTEND_URL') + 'signin',
+          url: buildFrontendUrl(
+            this.configService.get<string>('FRONTEND_URL'),
+            '/auth/jwt/sign-in',
+          ),
         },
         to: email,
         subject: 'Bienvenue sur DocPlus',
@@ -221,6 +226,47 @@ export class MailingService {
         'Failed to send request completed notification email:',
         error,
       );
+      return false;
+    }
+  }
+
+  /**
+   * Tell the attendee about their appointment, with a one-click join link when
+   * the consultation happens over video.
+   *
+   * Every context key is passed even when empty: templates are compiled in
+   * strict mode, which throws on a missing property.
+   */
+  async sendAppointmentInvitation(
+    email: string,
+    appointmentData: {
+      fullname: string;
+      title: string;
+      startFormatted: string;
+      practitionerName?: string;
+      joinUrl?: string;
+      rescheduled?: boolean;
+    },
+  ): Promise<boolean> {
+    try {
+      await this.sendMail({
+        templatePath: MailTemplate.AppointmentInvitation,
+        context: {
+          fullname: appointmentData.fullname,
+          title: appointmentData.title,
+          startFormatted: appointmentData.startFormatted,
+          practitionerName: appointmentData.practitionerName ?? '',
+          joinUrl: appointmentData.joinUrl ?? '',
+          rescheduled: appointmentData.rescheduled ?? false,
+        },
+        to: email,
+        subject: appointmentData.rescheduled
+          ? `Rendez-vous reporté - ${appointmentData.startFormatted}`
+          : `Votre rendez-vous - ${appointmentData.startFormatted}`,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to send appointment invitation email:', error);
       return false;
     }
   }

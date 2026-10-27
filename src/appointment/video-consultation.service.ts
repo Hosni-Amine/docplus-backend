@@ -31,7 +31,7 @@ export class VideoConsultationService {
     private readonly appointmentRepository: AppointmentRepository,
     private readonly userRepository: UserRepository,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   /**
    * Generates a secure, time-bound LiveKit JWT token for the appointment consultation room.
@@ -52,10 +52,9 @@ export class VideoConsultationService {
       const actorId = actor.id.toString();
       const actorObjectId = new Types.ObjectId(actorId);
 
-      // Directly find non-deleted appointment with video enabled where actor is either attendee (userId) or assigned staff (adminId)
+      // Find non-deleted appointment where actor is either attendee (userId) or assigned staff (adminId)
       const appointment = await this.appointmentRepository.findOne({
         _id: new Types.ObjectId(appointmentId),
-        withVideo: true,
         isDeleted: false,
         $or: [{ userId: actorObjectId }, { adminId: actorObjectId }],
       });
@@ -67,23 +66,30 @@ export class VideoConsultationService {
         };
       }
 
-      // Enforce: room only opens starting 15 minutes before start time and closes 15 minutes after end time
-      const now = new Date();
-      const opensAt = new Date(
-        new Date(appointment.start).getTime() - 15 * 60 * 1000,
-      );
-      const closesAt = new Date(
-        new Date(appointment.end).getTime() + 15 * 60 * 1000,
-      );
-
-      if (now < opensAt) {
+      // Check if video is enabled for this appointment
+      if (!appointment.withVideo) {
         return {
           status: 403,
-          message: 'CONSULTATION_ROOM_NOT_OPEN_YET',
+          message: 'VIDEO_NOT_ENABLED_FOR_APPOINTMENT',
         };
       }
 
-      if (now > closesAt) {
+      // Enforce: room only opens starting 15 minutes before start time and closes 15 minutes after end time
+      const now = new Date();
+      const startTime = new Date(appointment.start).getTime();
+      const endTime = new Date(appointment.end).getTime();
+
+      if (Number.isNaN(startTime) || Number.isNaN(endTime)) {
+        return {
+          status: 400,
+          message: 'INVALID_PARAMETERS',
+        };
+      }
+
+      const opensAt = new Date(startTime - 15 * 60 * 1000);
+      const closesAt = new Date(endTime + 15 * 60 * 1000);
+
+      if (now < opensAt || now > closesAt) {
         return {
           status: 403,
           message: 'CONSULTATION_ROOM_CLOSED',
@@ -140,10 +146,16 @@ export class VideoConsultationService {
       const identity = actorId || `user_${Date.now()}`;
 
       // Create LiveKit Access Token
+      // Expire with the room, so a token cannot outlive the consultation.
+      const ttlSeconds = Math.max(
+        Math.floor((closesAt.getTime() - now.getTime()) / 1000),
+        60,
+      );
+
       const at = new AccessToken(livekitApiKey, livekitApiSecret, {
         identity,
         name: participantName,
-        ttl: '3h', // 3 hours validity
+        ttl: ttlSeconds,
       });
 
       // Add permissions: anyone with token can join and stream mic/cam

@@ -6,3 +6,4 @@ export * from './responses.dto';
 export * from './database/abstract.entity';
 export * from './database/abstract.repository';
 export * from './file-uploader';
+export * from './frontend-url';

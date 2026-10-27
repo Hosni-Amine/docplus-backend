@@ -58,6 +58,10 @@ export class Appointment extends AbstractDocument {
 
   @Prop({ type: String })
   meetingRoom?: string;
+
+  /** Sessions already minted from the attendee's invite link. */
+  @Prop({ type: Number, default: 0 })
+  inviteExchangeCount?: number;
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);

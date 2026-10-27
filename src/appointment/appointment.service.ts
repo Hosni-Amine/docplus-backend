@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Types } from 'mongoose';
 import { ERole, EUserStatus } from '../common';
 import { IBaseRes } from '../common/responses.dto';
+import { MailingService } from '../mailing/mailing.service';
+import { User } from '../user/entities/user.entity';
 import { UserRepository } from '../user/user.repository';
 import { CreateAppointmentInput } from './dto/create-appointment.input';
 import { UpdateAppointmentInput } from './dto/update-appointment.input';
 import { Appointment } from './entities/appointment.entity';
+import { AppointmentInviteService } from './appointment-invite.service';
 import { AppointmentRepository } from './appointment.repository';
 
 type Actor = {
@@ -29,7 +33,10 @@ export class AppointmentService {
   constructor(
     private readonly appointmentRepository: AppointmentRepository,
     private readonly userRepository: UserRepository,
-  ) {}
+    private readonly inviteService: AppointmentInviteService,
+    private readonly mailingService: MailingService,
+    private readonly configService: ConfigService,
+  ) { }
 
   /**
    * Create an appointment for a user (role USER) in the actor's office.
@@ -75,6 +82,10 @@ export class AppointmentService {
         withVideo: input.withVideo ?? false,
         isDeleted: false,
       });
+
+      if (userCheck.user) {
+        await this.notifyAttendee(appointment, userCheck.user, false);
+      }
 
       return {
         status: 201,
@@ -207,6 +218,7 @@ export class AppointmentService {
         adminId,
         start: startInput,
         end: endInput,
+        withVideo,
         ...rest
       } = input;
       const updates: Record<string, unknown> = { ...rest };
@@ -222,11 +234,36 @@ export class AppointmentService {
       if (endInput) {
         updates.end = new Date(endInput);
       }
+      if (withVideo !== undefined) {
+        updates.withVideo = Boolean(withVideo);
+      }
 
       const appointment = await this.appointmentRepository.findOneAndUpdate(
         { _id: id },
         updates,
       );
+
+      if (appointment) {
+        const rescheduled =
+          (updates.start instanceof Date &&
+            updates.start.getTime() !== new Date(existing.start).getTime()) ||
+          (updates.end instanceof Date &&
+            updates.end.getTime() !== new Date(existing.end).getTime());
+
+        const videoSwitched =
+          updates.withVideo !== undefined &&
+          Boolean(updates.withVideo) !== Boolean(existing.withVideo);
+
+        if (rescheduled || videoSwitched) {
+          const attendee = await this.userRepository.findOne({
+            _id: appointment.userId,
+          });
+          if (attendee) {
+            await this.notifyAttendee(appointment, attendee, rescheduled);
+          }
+        }
+      }
+
       return {
         status: 200,
         message: 'APPOINTMENT_UPDATED_SUCCESSFULLY',
@@ -269,11 +306,84 @@ export class AppointmentService {
     }
   }
 
+  /**
+   * Email the attendee their appointment details, with a one-click join link
+   * when the consultation is held over video.
+   *
+   * A failure here never fails the appointment: the record is already saved.
+   */
+  private async notifyAttendee(
+    appointment: Appointment,
+    attendee: User,
+    rescheduled: boolean,
+  ): Promise<void> {
+    try {
+      if (!attendee.email) {
+        return;
+      }
+
+      let joinUrl: string | undefined;
+      if (appointment.withVideo) {
+        const inviteToken = await this.inviteService.sign({
+          appointmentId: appointment._id.toString(),
+          userId: attendee._id.toString(),
+          email: attendee.email,
+          end: appointment.end,
+        });
+        joinUrl = this.inviteService.buildJoinLink(
+          appointment._id.toString(),
+          inviteToken,
+        );
+      }
+
+      let practitionerName: string | undefined;
+      if (appointment.adminId) {
+        const practitioner = await this.userRepository.findOne({
+          _id: appointment.adminId,
+        });
+        if (practitioner) {
+          practitionerName =
+            [practitioner.firstName, practitioner.lastName]
+              .filter(Boolean)
+              .join(' ') || practitioner.email;
+        }
+      }
+
+      await this.mailingService.sendAppointmentInvitation(attendee.email, {
+        fullname:
+          [attendee.firstName, attendee.lastName].filter(Boolean).join(' ') ||
+          attendee.email,
+        title: appointment.title,
+        startFormatted: this.formatAppointmentDate(appointment.start),
+        practitionerName,
+        joinUrl,
+        rescheduled,
+      });
+    } catch (error) {
+      this.logger.error('Failed to notify appointment attendee', error);
+    }
+  }
+
+  /** Human-readable appointment date for emails. */
+  private formatAppointmentDate(date: Date): string {
+    const timeZone =
+      this.configService.get<string>('APP_TIMEZONE') || 'Europe/Paris';
+    try {
+      return new Intl.DateTimeFormat('fr-FR', {
+        dateStyle: 'full',
+        timeStyle: 'short',
+        timeZone,
+      }).format(new Date(date));
+    } catch {
+      return new Date(date).toISOString();
+    }
+  }
+
   private async resolveAttendeeUser(
     userId: string,
     officeId: string,
     actor: Actor,
-  ): Promise<{ status: number; error?: string }> {
+  ): Promise<{ status: number; error?: string; user?: User }> {
     const user = await this.userRepository.findOne({
       _id: userId,
       status: { $ne: EUserStatus.DELETED },
@@ -293,7 +403,7 @@ export class AppointmentService {
     if (user.officeId.toString() !== officeId) {
       return { status: 400, error: 'USER_OFFICE_MISMATCH' };
     }
-    return { status: 200 };
+    return { status: 200, user };
   }
 
   private getDateError(

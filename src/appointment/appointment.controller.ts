@@ -1,5 +1,6 @@
 import {
   Get,
+  Req,
   Body,
   Post,
   Param,
@@ -7,6 +8,7 @@ import {
   UseGuards,
   Controller,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthGuard, RolesGuard } from '../guards';
 import { CurrentUser } from '../decorators';
 import { Roles } from '../decorators/roles.decorator';
@@ -23,6 +25,10 @@ import {
   ConsultationTokenRes,
   VideoConsultationService,
 } from './video-consultation.service';
+import {
+  ExchangeInviteRes,
+  AppointmentInviteService,
+} from './appointment-invite.service';
 
 type Actor = {
   id?: string;
@@ -35,7 +41,41 @@ export class AppointmentController {
   constructor(
     private readonly appointmentService: AppointmentService,
     private readonly videoConsultationService: VideoConsultationService,
+    private readonly appointmentInviteService: AppointmentInviteService,
   ) { }
+
+  /**
+   * Trade an emailed appointment invite for a session token.
+   *
+   * Public on purpose: this is how an attendee who is not signed in joins
+   * their consultation. The invite is signed, bound to one appointment and
+   * one attendee, and only works while that room is open.
+   */
+  @Post('invite/exchange')
+  async exchangeInvite(
+    @Body('token') token: string,
+    @Req() request: Request,
+  ): Promise<ExchangeInviteRes> {
+    return this.appointmentInviteService.exchange(
+      token,
+      request.ip || 'unknown',
+    );
+  }
+
+  /**
+   * Resend a fresh appointment invite link to the attendee's email.
+   * Public endpoint that accepts the current token to verify appointment identity.
+   */
+  @Post('invite/resend')
+  async resendInvite(
+    @Body('token') token: string,
+    @Req() request: Request,
+  ): Promise<IBaseRes> {
+    return this.appointmentInviteService.resendInvite(
+      token,
+      request.ip || 'unknown',
+    );
+  }
 
   @UseGuards(AuthGuard)
   @Get(':id/consultation/token')
