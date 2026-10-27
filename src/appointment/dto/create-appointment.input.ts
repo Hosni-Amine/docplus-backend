@@ -17,11 +17,19 @@ export class CreateAppointmentInput {
 
   @IsOptional()
   @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsString()
   color?: string;
 
   @IsOptional()
   @IsBoolean()
   allDay?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  withVideo?: boolean;
 
   @IsDateString()
   @IsNotEmpty()

@@ -33,3 +33,9 @@ export enum EContractStatus {
   ACTIVE = 'active',
   CANCELLED = 'cancelled',
 }
+
+export enum EMeetingStatus {
+  SCHEDULED = 'scheduled',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+}

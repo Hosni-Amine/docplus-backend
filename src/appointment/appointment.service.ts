@@ -72,6 +72,7 @@ export class AppointmentService {
         userId: new Types.ObjectId(input.userId),
         adminId: input.adminId ? new Types.ObjectId(input.adminId) : undefined,
         officeId: new Types.ObjectId(officeId),
+        withVideo: input.withVideo ?? false,
         isDeleted: false,
       });
 

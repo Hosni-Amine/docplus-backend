@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
-import { AbstractDocument } from '../../common';
+import { AbstractDocument, EMeetingStatus } from '../../common';
 
 @Schema({
   versionKey: false,
@@ -15,6 +15,10 @@ export class Appointment extends AbstractDocument {
 
   @Prop()
   description?: string;
+
+  /** Notes added during consultation sessions. */
+  @Prop()
+  notes?: string;
 
   @Prop()
   color?: string;
@@ -41,6 +45,19 @@ export class Appointment extends AbstractDocument {
 
   @Prop({ type: Boolean, default: false })
   isDeleted: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  withVideo: boolean;
+
+  @Prop({
+    type: String,
+    enum: Object.values(EMeetingStatus),
+    default: EMeetingStatus.SCHEDULED,
+  })
+  meetingStatus?: EMeetingStatus;
+
+  @Prop({ type: String })
+  meetingRoom?: string;
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);

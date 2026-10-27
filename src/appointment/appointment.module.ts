@@ -5,6 +5,7 @@ import { UserModule } from '../user/user.module';
 import { AppointmentController } from './appointment.controller';
 import { AppointmentRepository } from './appointment.repository';
 import { AppointmentService } from './appointment.service';
+import { VideoConsultationService } from './video-consultation.service';
 import { Appointment, AppointmentSchema } from './entities/appointment.entity';
 
 @Module({
@@ -16,7 +17,11 @@ import { Appointment, AppointmentSchema } from './entities/appointment.entity';
     ]),
   ],
   controllers: [AppointmentController],
-  providers: [AppointmentService, AppointmentRepository],
-  exports: [AppointmentRepository],
+  providers: [
+    AppointmentService,
+    AppointmentRepository,
+    VideoConsultationService,
+  ],
+  exports: [AppointmentRepository, VideoConsultationService],
 })
 export class AppointmentModule {}

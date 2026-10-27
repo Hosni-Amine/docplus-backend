@@ -4,6 +4,7 @@
 /mongo_volume
 /mongo_volume/*
 mongo_volume/*
+*.tsbuildinfo
 
 # Environment variables
 .env
@@ -36,6 +37,7 @@ lerna-debug.log*
 *.launch
 .settings/
 *.sublime-workspace
+*.code-workspace
 
 # IDE - VSCode
 .vscode/*
