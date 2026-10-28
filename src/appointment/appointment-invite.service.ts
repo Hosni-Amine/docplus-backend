@@ -3,7 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Types } from 'mongoose';
 import { AuthRateLimiter } from '../auth/auth-rate-limiter';
-import { buildFrontendUrl, EUserStatus, IBaseRes } from '../common';
+import {
+  IBaseRes,
+  EUserStatus,
+  EConsultationType,
+  buildFrontendUrl,
+} from '../common';
 import { MailingService } from '../mailing/mailing.service';
 import { UserRepository } from '../user/user.repository';
 import { AppointmentRepository } from './appointment.repository';
@@ -51,7 +56,7 @@ export class AppointmentInviteService {
     private readonly appointmentRepository: AppointmentRepository,
     private readonly userRepository: UserRepository,
     private readonly mailingService: MailingService,
-  ) { }
+  ) {}
 
   /**
    * Sign an invite for the attendee. It expires when the room closes and is
@@ -115,7 +120,7 @@ export class AppointmentInviteService {
    * Only inside the room window, only for the invited attendee of that
    * appointment, and only while the exchange budget lasts.
    */
-  async exchange(token: string, ip?: string): Promise<ExchangeInviteRes> {
+  async exchange(token: string): Promise<ExchangeInviteRes> {
     const invalid: ExchangeInviteRes = {
       status: 400,
       message: 'INVITE_INVALID_OR_EXPIRED',
@@ -136,7 +141,8 @@ export class AppointmentInviteService {
         userId: new Types.ObjectId(payload.uid),
         isDeleted: false,
       });
-      if (!appointment || !appointment.withVideo) {
+      const isVideo = appointment?.consultationType === EConsultationType.VIDEO;
+      if (!appointment || !isVideo) {
         return invalid;
       }
 
@@ -210,20 +216,13 @@ export class AppointmentInviteService {
    * Resend a fresh appointment invite link to the attendee when their link was used up.
    * Resets the invite exchange count so the attendee can join.
    */
-  async resendInvite(
-    token: string,
-    ip: string,
-  ): Promise<IBaseRes> {
+  async resendInvite(token: string, ip: string): Promise<IBaseRes> {
     if (!token) {
       return { status: 400, message: 'INVITE_INVALID_OR_EXPIRED' };
     }
 
     if (
-      !this.rateLimiter.tryConsume(
-        `invite:resend:${ip}`,
-        20,
-        RESEND_WINDOW_MS,
-      )
+      !this.rateLimiter.tryConsume(`invite:resend:${ip}`, 20, RESEND_WINDOW_MS)
     ) {
       return { status: 429, message: 'TOO_MANY_REQUESTS' };
     }
@@ -232,12 +231,17 @@ export class AppointmentInviteService {
       // Decode or verify payload
       let payload: AppointmentInvitePayload | null = null;
       try {
-        payload = await this.jwtService.verifyAsync<AppointmentInvitePayload>(token, {
-          secret: this.configService.getOrThrow<string>('JWT_SECRET'),
-          algorithms: ['HS256'],
-        });
+        payload = await this.jwtService.verifyAsync<AppointmentInvitePayload>(
+          token,
+          {
+            secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+            algorithms: ['HS256'],
+          },
+        );
       } catch {
-        payload = this.jwtService.decode(token) as AppointmentInvitePayload | null;
+        payload = this.jwtService.decode(
+          token,
+        ) as AppointmentInvitePayload | null;
       }
 
       if (
@@ -260,7 +264,8 @@ export class AppointmentInviteService {
         return { status: 400, message: 'INVITE_INVALID_OR_EXPIRED' };
       }
 
-      if (!appointment.withVideo) {
+      const isVideo = appointment.consultationType === EConsultationType.VIDEO;
+      if (!isVideo) {
         return { status: 403, message: 'VIDEO_NOT_ENABLED_FOR_APPOINTMENT' };
       }
 
@@ -345,4 +350,3 @@ export class AppointmentInviteService {
     }
   }
 }
-

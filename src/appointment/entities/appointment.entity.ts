@@ -1,6 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
-import { AbstractDocument, EMeetingStatus } from '../../common';
+import {
+  AbstractDocument,
+  EConsultationType,
+  EMeetingStatus,
+} from '../../common';
 
 @Schema({
   versionKey: false,
@@ -46,8 +50,13 @@ export class Appointment extends AbstractDocument {
   @Prop({ type: Boolean, default: false })
   isDeleted: boolean;
 
-  @Prop({ type: Boolean, default: false })
-  withVideo: boolean;
+  @Prop({
+    type: String,
+    enum: Object.values(EConsultationType),
+    default: EConsultationType.IN_OFFICE,
+    required: true,
+  })
+  consultationType: EConsultationType;
 
   @Prop({
     type: String,
@@ -65,3 +74,17 @@ export class Appointment extends AbstractDocument {
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);
+
+AppointmentSchema.virtual('user', {
+  ref: 'User',
+  localField: 'userId',
+  foreignField: '_id',
+  justOne: true,
+});
+
+AppointmentSchema.virtual('admin', {
+  ref: 'User',
+  localField: 'adminId',
+  foreignField: '_id',
+  justOne: true,
+});

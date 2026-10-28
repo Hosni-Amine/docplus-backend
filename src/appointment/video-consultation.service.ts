@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AccessToken } from 'livekit-server-sdk';
 import { Types } from 'mongoose';
-import { ERole, EMeetingStatus } from '../common';
+import { ERole, EMeetingStatus, EConsultationType } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { UserRepository } from '../user/user.repository';
 import { AppointmentRepository } from './appointment.repository';
@@ -31,7 +31,7 @@ export class VideoConsultationService {
     private readonly appointmentRepository: AppointmentRepository,
     private readonly userRepository: UserRepository,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   /**
    * Generates a secure, time-bound LiveKit JWT token for the appointment consultation room.
@@ -67,7 +67,7 @@ export class VideoConsultationService {
       }
 
       // Check if video is enabled for this appointment
-      if (!appointment.withVideo) {
+      if (appointment.consultationType !== EConsultationType.VIDEO) {
         return {
           status: 403,
           message: 'VIDEO_NOT_ENABLED_FOR_APPOINTMENT',

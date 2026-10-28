@@ -70,10 +70,11 @@ export class Office extends AbstractDocument {
 
 export const OfficeSchema = SchemaFactory.createForClass(Office);
 
-OfficeSchema.virtual('officeUsers', {
+OfficeSchema.virtual('officeAdmins', {
   ref: 'User',
   localField: '_id',
   foreignField: 'officeId',
+  match: { role: ERole.ADMIN },
 });
 
 OfficeSchema.virtual('adminsCount', {

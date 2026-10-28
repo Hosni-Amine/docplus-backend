@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Types } from 'mongoose';
-import { ERole, EUserStatus } from '../common';
+import { EConsultationType, ERole, EUserStatus } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { MailingService } from '../mailing/mailing.service';
 import { User } from '../user/entities/user.entity';
@@ -36,7 +36,7 @@ export class AppointmentService {
     private readonly inviteService: AppointmentInviteService,
     private readonly mailingService: MailingService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   /**
    * Create an appointment for a user (role USER) in the actor's office.
@@ -79,7 +79,7 @@ export class AppointmentService {
         userId: new Types.ObjectId(input.userId),
         adminId: input.adminId ? new Types.ObjectId(input.adminId) : undefined,
         officeId: new Types.ObjectId(officeId),
-        withVideo: input.withVideo ?? false,
+        consultationType: input.consultationType,
         isDeleted: false,
       });
 
@@ -87,10 +87,14 @@ export class AppointmentService {
         await this.notifyAttendee(appointment, userCheck.user, false);
       }
 
+      const populated = await this.appointmentRepository.findOneWithUser({
+        _id: appointment._id,
+      });
+
       return {
         status: 201,
         message: 'APPOINTMENT_CREATED_SUCCESSFULLY',
-        appointment,
+        appointment: (populated ?? appointment) as any,
       };
     } catch (error) {
       this.logger.error(error);
@@ -111,14 +115,14 @@ export class AppointmentService {
         return { status: 403, message: 'OFFICE_REQUIRED', appointments: [] };
       }
 
-      const appointments = await this.appointmentRepository.find({
+      const appointments = await this.appointmentRepository.findWithUser({
         officeId: actor.officeId,
         isDeleted: false,
       });
       return {
         status: 200,
         message: 'APPOINTMENTS_FOUND_SUCCESSFULLY',
-        appointments,
+        appointments: appointments as any,
       };
     } catch (error) {
       this.logger.error(error);
@@ -138,7 +142,7 @@ export class AppointmentService {
     actor: Actor,
   ): Promise<GetAppointmentRes> {
     try {
-      const appointment = await this.appointmentRepository.findOne({
+      const appointment = await this.appointmentRepository.findOneWithUser({
         _id: id,
         isDeleted: false,
       });
@@ -155,7 +159,7 @@ export class AppointmentService {
       return {
         status: 200,
         message: 'APPOINTMENT_FOUND_SUCCESSFULLY',
-        appointment,
+        appointment: appointment as any,
       };
     } catch (error) {
       this.logger.error(error);
@@ -218,7 +222,7 @@ export class AppointmentService {
         adminId,
         start: startInput,
         end: endInput,
-        withVideo,
+        consultationType,
         ...rest
       } = input;
       const updates: Record<string, unknown> = { ...rest };
@@ -234,8 +238,8 @@ export class AppointmentService {
       if (endInput) {
         updates.end = new Date(endInput);
       }
-      if (withVideo !== undefined) {
-        updates.withVideo = Boolean(withVideo);
+      if (consultationType !== undefined) {
+        updates.consultationType = consultationType;
       }
 
       const appointment = await this.appointmentRepository.findOneAndUpdate(
@@ -251,8 +255,9 @@ export class AppointmentService {
             updates.end.getTime() !== new Date(existing.end).getTime());
 
         const videoSwitched =
-          updates.withVideo !== undefined &&
-          Boolean(updates.withVideo) !== Boolean(existing.withVideo);
+          updates.consultationType !== undefined &&
+          (existing.consultationType === EConsultationType.VIDEO) !==
+            (appointment.consultationType === EConsultationType.VIDEO);
 
         if (rescheduled || videoSwitched) {
           const attendee = await this.userRepository.findOne({
@@ -264,10 +269,14 @@ export class AppointmentService {
         }
       }
 
+      const populated = await this.appointmentRepository.findOneWithUser({
+        _id: id,
+      });
+
       return {
         status: 200,
         message: 'APPOINTMENT_UPDATED_SUCCESSFULLY',
-        appointment: appointment ?? null,
+        appointment: (populated ?? appointment ?? null) as any,
       };
     } catch (error) {
       this.logger.error(error);
@@ -323,7 +332,7 @@ export class AppointmentService {
       }
 
       let joinUrl: string | undefined;
-      if (appointment.withVideo) {
+      if (appointment.consultationType === EConsultationType.VIDEO) {
         const inviteToken = await this.inviteService.sign({
           appointmentId: appointment._id.toString(),
           userId: attendee._id.toString(),

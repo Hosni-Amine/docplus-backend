@@ -1,10 +1,12 @@
 import {
   IsBoolean,
   IsDateString,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
+import { EConsultationType } from '../../common';
 
 export class CreateAppointmentInput {
   @IsString()
@@ -27,9 +29,9 @@ export class CreateAppointmentInput {
   @IsBoolean()
   allDay?: boolean;
 
-  @IsOptional()
-  @IsBoolean()
-  withVideo?: boolean;
+  @IsEnum(EConsultationType)
+  @IsNotEmpty()
+  consultationType: EConsultationType;
 
   @IsDateString()
   @IsNotEmpty()

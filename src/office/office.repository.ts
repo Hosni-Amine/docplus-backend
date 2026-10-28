@@ -5,8 +5,8 @@ import { AbstractRepository, ERole } from '../common';
 import { publicUserFields } from '../user/user.fields';
 import { Office } from './entities/office.entity';
 
-const officeUsersPopulate = {
-  path: 'officeUsers',
+const officeAdminsPopulate = {
+  path: 'officeAdmins',
   select: publicUserFields,
   match: { role: ERole.ADMIN },
 };
@@ -27,7 +27,7 @@ export class OfficeRepository extends AbstractRepository<Office> {
   findAllWithUsers(): Promise<Office[]> {
     return this.officeModel
       .find()
-      .populate(officeUsersPopulate)
+      .populate(officeAdminsPopulate)
       .populate(officeCountPopulate)
       .lean({ virtuals: true });
   }
@@ -35,7 +35,7 @@ export class OfficeRepository extends AbstractRepository<Office> {
   findOneWithUsers(id: string): Promise<Office | null> {
     return this.officeModel
       .findOne({ _id: id })
-      .populate(officeUsersPopulate)
+      .populate(officeAdminsPopulate)
       .populate(officeCountPopulate)
       .lean({ virtuals: true });
   }

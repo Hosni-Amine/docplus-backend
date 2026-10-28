@@ -42,7 +42,7 @@ export class AppointmentController {
     private readonly appointmentService: AppointmentService,
     private readonly videoConsultationService: VideoConsultationService,
     private readonly appointmentInviteService: AppointmentInviteService,
-  ) { }
+  ) {}
 
   /**
    * Trade an emailed appointment invite for a session token.
@@ -54,12 +54,8 @@ export class AppointmentController {
   @Post('invite/exchange')
   async exchangeInvite(
     @Body('token') token: string,
-    @Req() request: Request,
   ): Promise<ExchangeInviteRes> {
-    return this.appointmentInviteService.exchange(
-      token,
-      request.ip || 'unknown',
-    );
+    return this.appointmentInviteService.exchange(token);
   }
 
   /**
@@ -94,7 +90,11 @@ export class AppointmentController {
     @Body('status') status: EMeetingStatus,
     @CurrentUser() user: Actor,
   ): Promise<IBaseRes> {
-    return this.videoConsultationService.updateConsultationStatus(id, status, user);
+    return this.videoConsultationService.updateConsultationStatus(
+      id,
+      status,
+      user,
+    );
   }
 
   @UseGuards(AuthGuard, RolesGuard)

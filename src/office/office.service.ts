@@ -52,15 +52,15 @@ export type ContractView = Contract & { displayStatus: ContractDisplayStatus };
 
 export interface GetOfficeRes extends IBaseRes {
   office:
-  | (Office & {
-    officeUsers?: OfficeUser[];
-    currentContract?: ContractView | null;
-  })
-  | null;
+    | (Office & {
+        officeAdmins?: OfficeUser[];
+        currentContract?: ContractView | null;
+      })
+    | null;
 }
 
 export interface GetOfficesRes extends IBaseRes {
-  offices: (Office & { officeUsers?: OfficeUser[] })[];
+  offices: (Office & { officeAdmins?: OfficeUser[] })[];
 }
 
 export interface GetContractsRes extends IBaseRes {
@@ -78,7 +78,7 @@ export class OfficeService {
   constructor(
     private readonly officeRepository: OfficeRepository,
     private readonly contractRepository: OfficeContractRepository,
-  ) { }
+  ) {}
 
   /**
    * Create an office. Only the platform admin calls this.

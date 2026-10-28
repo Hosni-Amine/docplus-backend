@@ -6,8 +6,9 @@ import { publicUserFields } from '../user/user.fields';
 import { Folder } from './entities/folder.entity';
 
 const folderUserPopulate = [
-  { path: 'userId', select: publicUserFields },
+  { path: 'user', select: publicUserFields },
   { path: 'createdBy', select: publicUserFields },
+  { path: 'lastUpdatedBy', select: publicUserFields },
 ];
 
 @Injectable()
@@ -25,13 +26,13 @@ export class FolderRepository extends AbstractRepository<Folder> {
     return this.folderModel
       .find(filterQuery)
       .populate(folderUserPopulate)
-      .lean();
+      .lean({ virtuals: true });
   }
 
   findOneWithUser(filterQuery: FilterQuery<Folder>): Promise<Folder | null> {
     return this.folderModel
       .findOne(filterQuery)
       .populate(folderUserPopulate)
-      .lean();
+      .lean({ virtuals: true });
   }
 }

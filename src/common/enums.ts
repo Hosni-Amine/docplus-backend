@@ -39,3 +39,10 @@ export enum EMeetingStatus {
   IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
 }
+
+export enum EConsultationType {
+  IN_OFFICE = 'in_office',
+  VIDEO = 'video',
+  PHONE = 'phone',
+  HOME_VISIT = 'home_visit',
+}

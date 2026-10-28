@@ -47,3 +47,10 @@ export class Folder extends AbstractDocument {
 }
 
 export const FolderSchema = SchemaFactory.createForClass(Folder);
+
+FolderSchema.virtual('user', {
+  ref: 'User',
+  localField: 'userId',
+  foreignField: '_id',
+  justOne: true,
+});
