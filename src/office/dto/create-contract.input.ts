@@ -1,4 +1,11 @@
-import { IsArray, IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { EOfficePlan } from '../../common';
 
 export class CreateContractInput {
@@ -23,4 +30,3 @@ export class CreateContractInput {
   @IsString({ each: true })
   documents?: string[];
 }
-

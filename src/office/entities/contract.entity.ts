@@ -19,7 +19,11 @@ export class Contract extends AbstractDocument {
   @Prop({ type: Date, required: true })
   endDate: Date;
 
-  @Prop({ enum: EContractStatus, type: String, default: EContractStatus.ACTIVE })
+  @Prop({
+    enum: EContractStatus,
+    type: String,
+    default: EContractStatus.ACTIVE,
+  })
   status: EContractStatus;
 
   @Prop({ enum: EOfficePlan, type: String })

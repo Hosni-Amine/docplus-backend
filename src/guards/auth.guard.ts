@@ -22,7 +22,7 @@ export class AuthGuard implements CanActivate {
     private config: ConfigService,
     private userRepository: UserRepository,
     private officeRepository: OfficeRepository,
-  ) { }
+  ) {}
 
   /**
    * Accept the request only when the bearer token is a valid HS256 JWT
@@ -46,13 +46,15 @@ export class AuthGuard implements CanActivate {
       // Exception: dedicated 'video_session' tokens are permitted exclusively
       // for retrieving the consultation token for their specific appointment.
       if (payload.purpose) {
-        const fullUrl = request.originalUrl || request.url || request.path || '';
+        const fullUrl =
+          request.originalUrl || request.url || request.path || '';
         const isConsultationTokenRoute =
           request.method === 'GET' && fullUrl.includes('/consultation/token');
 
         const routeAppointmentId =
           request.params?.id ||
-          (fullUrl.match(/\/appointment\/([^/?]+)\/consultation\/token/) || [])[1];
+          (fullUrl.match(/\/appointment\/([^/?]+)\/consultation\/token/) ||
+            [])[1];
 
         if (
           payload.purpose === 'video_session' &&
@@ -119,7 +121,7 @@ export class AuthGuard implements CanActivate {
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) { }
+  constructor(private reflector: Reflector) {}
   /**
    * Allow the request when the user's role is one of the roles set on the route.
    */

@@ -74,7 +74,7 @@ OfficeSchema.virtual('officeAdmins', {
   ref: 'User',
   localField: '_id',
   foreignField: 'officeId',
-  match: { role: ERole.ADMIN },
+  match: { role: ERole.ADMIN, status: { $ne: EUserStatus.DELETED } },
 });
 
 OfficeSchema.virtual('adminsCount', {

@@ -1,4 +1,10 @@
-import { IsArray, IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { EContractStatus, EOfficePlan } from '../../common';
 
 export class UpdateContractInput {
