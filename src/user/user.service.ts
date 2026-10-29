@@ -287,10 +287,18 @@ export class UserService {
    */
   async getUsersWithPagination(
     getUserInput: GetUsersInput,
+    actor?: User,
   ): Promise<GetUsersPaginator> {
     try {
       const { name, role, status, limit = 10, skip = 0 } = getUserInput;
       const query: Record<string, unknown> = {};
+
+      if (actor && actor.role === ERole.ADMIN) {
+        if (!actor.officeId) {
+          return emptyUsersPage(limit);
+        }
+        query.officeId = actor.officeId;
+      }
 
       if (status) {
         query.status = status;
@@ -378,7 +386,7 @@ export class UserService {
   /**
    * Return one user by id, without OTP fields.
    */
-  async getUserById(id: string): Promise<GetUserRes> {
+  async getUserById(id: string, actor?: User): Promise<GetUserRes> {
     try {
       const user = await this.userRepository.findOne(
         { _id: id },
@@ -387,6 +395,19 @@ export class UserService {
       if (!user) {
         return this.result(404, 'USER_NOT_FOUND');
       }
+
+      if (actor && actor.role !== ERole.SUPER_ADMIN) {
+        const isSelf = actor._id?.toString() === user._id?.toString();
+        const sameOffice =
+          actor.officeId &&
+          user.officeId &&
+          actor.officeId.toString() === user.officeId.toString();
+
+        if (!isSelf && !sameOffice) {
+          return this.result(403, 'FORBIDDEN');
+        }
+      }
+
       return this.result(200, 'USER_FOUND', user);
     } catch (error) {
       this.logger.error('Error getting user by id:', error);

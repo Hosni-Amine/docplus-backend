@@ -8,20 +8,38 @@ function safeFileName(originalname: string) {
   return `${Date.now()}-${random}-${base}`;
 }
 
+function sanitizeDirSegment(segment: string): string {
+  return segment.replace(/[^a-zA-Z0-9_-]/g, '');
+}
+
 export async function handleFileUpload(
   files: Multer.File[],
   folder: string,
   subfolder?: string,
 ): Promise<string[]> {
   try {
-    const uploadDir = `uploads/${folder}/${subfolder ?? ''}`;
+    const cleanFolder = sanitizeDirSegment(folder);
+    if (!cleanFolder) {
+      throw new Error('Invalid upload folder');
+    }
+    const cleanSubfolder = subfolder ? sanitizeDirSegment(subfolder) : '';
+    const uploadDir = cleanSubfolder
+      ? path.join('uploads', cleanFolder, cleanSubfolder)
+      : path.join('uploads', cleanFolder);
+
+    const resolvedPath = path.resolve(uploadDir);
+    const resolvedRoot = path.resolve('uploads');
+    if (!resolvedPath.startsWith(resolvedRoot)) {
+      throw new Error('Path traversal detected');
+    }
+
     await fs.promises.mkdir(uploadDir, { recursive: true });
 
     return await Promise.all(
       files.map(async (file) => {
-        const filePath = `${uploadDir}/${safeFileName(file.originalname)}`;
+        const filePath = path.join(uploadDir, safeFileName(file.originalname));
         await fs.promises.writeFile(filePath, file.buffer);
-        return filePath;
+        return filePath.replace(/\\/g, '/');
       }),
     );
   } catch (error: any) {

@@ -95,3 +95,6 @@ export class User extends AbstractDocument {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.index({ email: 1 }, { unique: true, sparse: true });
+UserSchema.index({ officeId: 1, role: 1, status: 1 });

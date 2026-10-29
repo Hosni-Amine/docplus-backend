@@ -37,3 +37,5 @@ export class Contract extends AbstractDocument {
 }
 
 export const ContractSchema = SchemaFactory.createForClass(Contract);
+
+ContractSchema.index({ officeId: 1, startDate: -1 });

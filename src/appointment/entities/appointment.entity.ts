@@ -88,3 +88,7 @@ AppointmentSchema.virtual('admin', {
   foreignField: '_id',
   justOne: true,
 });
+
+AppointmentSchema.index({ officeId: 1, isDeleted: 1, start: 1 });
+AppointmentSchema.index({ userId: 1, isDeleted: 1 });
+AppointmentSchema.index({ adminId: 1, isDeleted: 1 });

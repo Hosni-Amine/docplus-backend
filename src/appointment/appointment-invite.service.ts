@@ -319,7 +319,7 @@ export class AppointmentInviteService {
         this.configService.get<string>('APP_TIMEZONE') || 'Europe/Paris';
       let startFormatted: string;
       try {
-        startFormatted = new Intl.DateTimeFormat('fr-FR', {
+        startFormatted = new Intl.DateTimeFormat('en-GB', {
           dateStyle: 'full',
           timeStyle: 'short',
           timeZone,
@@ -335,6 +335,7 @@ export class AppointmentInviteService {
         title: appointment.title,
         startFormatted,
         practitionerName,
+        consultationTypeLabel: 'Video consultation',
         joinUrl,
         rescheduled: false,
       });

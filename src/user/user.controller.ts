@@ -104,8 +104,9 @@ export class UserController {
   @Post('with-pagination')
   async getUsersWithPagination(
     @Body() getUsersInput: GetUsersInput,
+    @CurrentUser() user: User,
   ): Promise<GetUsersPaginator> {
-    return await this.userService.getUsersWithPagination(getUsersInput);
+    return await this.userService.getUsersWithPagination(getUsersInput, user);
   }
 
   @UseGuards(AuthGuard, RolesGuard)
@@ -134,8 +135,11 @@ export class UserController {
 
   @UseGuards(AuthGuard)
   @Get(':id')
-  async getUserById(@Param('id') id: string): Promise<GetUserRes> {
-    return await this.userService.getUserById(id);
+  async getUserById(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ): Promise<GetUserRes> {
+    return await this.userService.getUserById(id, user);
   }
 
   @UseGuards(AuthGuard, RolesGuard)

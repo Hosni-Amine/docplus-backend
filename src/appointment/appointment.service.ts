@@ -6,6 +6,7 @@ import { IBaseRes } from '../common/responses.dto';
 import { MailingService } from '../mailing/mailing.service';
 import { User } from '../user/entities/user.entity';
 import { UserRepository } from '../user/user.repository';
+import { OfficeRepository } from '../office/office.repository';
 import { CreateAppointmentInput } from './dto/create-appointment.input';
 import { UpdateAppointmentInput } from './dto/update-appointment.input';
 import { Appointment } from './entities/appointment.entity';
@@ -33,6 +34,7 @@ export class AppointmentService {
   constructor(
     private readonly appointmentRepository: AppointmentRepository,
     private readonly userRepository: UserRepository,
+    private readonly officeRepository: OfficeRepository,
     private readonly inviteService: AppointmentInviteService,
     private readonly mailingService: MailingService,
     private readonly configService: ConfigService,
@@ -254,12 +256,11 @@ export class AppointmentService {
           (updates.end instanceof Date &&
             updates.end.getTime() !== new Date(existing.end).getTime());
 
-        const videoSwitched =
+        const typeChanged =
           updates.consultationType !== undefined &&
-          (existing.consultationType === EConsultationType.VIDEO) !==
-            (appointment.consultationType === EConsultationType.VIDEO);
+          updates.consultationType !== existing.consultationType;
 
-        if (rescheduled || videoSwitched) {
+        if (rescheduled || typeChanged) {
           const attendee = await this.userRepository.findOne({
             _id: appointment.userId,
           });
@@ -331,23 +332,10 @@ export class AppointmentService {
         return;
       }
 
-      let joinUrl: string | undefined;
-      if (appointment.consultationType === EConsultationType.VIDEO) {
-        const inviteToken = await this.inviteService.sign({
-          appointmentId: appointment._id.toString(),
-          userId: attendee._id.toString(),
-          email: attendee.email,
-          end: appointment.end,
-        });
-        joinUrl = this.inviteService.buildJoinLink(
-          appointment._id.toString(),
-          inviteToken,
-        );
-      }
-
+      let practitioner: User | null = null;
       let practitionerName: string | undefined;
       if (appointment.adminId) {
-        const practitioner = await this.userRepository.findOne({
+        practitioner = await this.userRepository.findOne({
           _id: appointment.adminId,
         });
         if (practitioner) {
@@ -358,6 +346,71 @@ export class AppointmentService {
         }
       }
 
+      let address: string | undefined;
+      let phone: string | undefined;
+      let consultationTypeLabel: string | undefined;
+      let joinUrl: string | undefined;
+
+      switch (appointment.consultationType) {
+        case EConsultationType.IN_OFFICE: {
+          consultationTypeLabel = 'In office consultation';
+          const office = await this.officeRepository.findOne({
+            _id: appointment.officeId,
+          });
+          if (office) {
+            const parts = [
+              office.address,
+              [office.zipCode, office.city].filter(Boolean).join(' '),
+              office.country,
+            ]
+              .map((p) => p?.trim())
+              .filter(Boolean);
+            address = parts.join(', ') || office.address?.trim() || undefined;
+          }
+          break;
+        }
+        case EConsultationType.HOME_VISIT: {
+          consultationTypeLabel = 'Home visit';
+          const parts = [
+            attendee.address,
+            [attendee.zipCode, attendee.city].filter(Boolean).join(' '),
+            attendee.country,
+          ]
+            .map((p) => p?.trim())
+            .filter(Boolean);
+          address = parts.join(', ') || attendee.address?.trim() || undefined;
+          break;
+        }
+        case EConsultationType.PHONE: {
+          consultationTypeLabel = 'Phone consultation';
+          const office = await this.officeRepository.findOne({
+            _id: appointment.officeId,
+          });
+          const rawPhone =
+            attendee.phone?.trim() ||
+            practitioner?.phone?.trim() ||
+            office?.phone?.trim();
+          phone = rawPhone || undefined;
+          break;
+        }
+        case EConsultationType.VIDEO: {
+          consultationTypeLabel = 'Video consultation';
+          const inviteToken = await this.inviteService.sign({
+            appointmentId: appointment._id.toString(),
+            userId: attendee._id.toString(),
+            email: attendee.email,
+            end: appointment.end,
+          });
+          joinUrl = this.inviteService.buildJoinLink(
+            appointment._id.toString(),
+            inviteToken,
+          );
+          break;
+        }
+        default:
+          break;
+      }
+
       await this.mailingService.sendAppointmentInvitation(attendee.email, {
         fullname:
           [attendee.firstName, attendee.lastName].filter(Boolean).join(' ') ||
@@ -365,6 +418,9 @@ export class AppointmentService {
         title: appointment.title,
         startFormatted: this.formatAppointmentDate(appointment.start),
         practitionerName,
+        consultationTypeLabel,
+        address,
+        phone,
         joinUrl,
         rescheduled,
       });
@@ -373,12 +429,12 @@ export class AppointmentService {
     }
   }
 
-  /** Human-readable appointment date for emails. */
+  /** Human-readable appointment date for emails (Day before Month in English). */
   private formatAppointmentDate(date: Date): string {
     const timeZone =
       this.configService.get<string>('APP_TIMEZONE') || 'Europe/Paris';
     try {
-      return new Intl.DateTimeFormat('fr-FR', {
+      return new Intl.DateTimeFormat('en-GB', {
         dateStyle: 'full',
         timeStyle: 'short',
         timeZone,

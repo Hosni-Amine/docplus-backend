@@ -244,6 +244,9 @@ export class MailingService {
       title: string;
       startFormatted: string;
       practitionerName?: string;
+      consultationTypeLabel?: string;
+      address?: string;
+      phone?: string;
       joinUrl?: string;
       rescheduled?: boolean;
     },
@@ -256,13 +259,16 @@ export class MailingService {
           title: appointmentData.title,
           startFormatted: appointmentData.startFormatted,
           practitionerName: appointmentData.practitionerName ?? '',
+          consultationTypeLabel: appointmentData.consultationTypeLabel ?? '',
+          address: appointmentData.address ?? '',
+          phone: appointmentData.phone ?? '',
           joinUrl: appointmentData.joinUrl ?? '',
           rescheduled: appointmentData.rescheduled ?? false,
         },
         to: email,
         subject: appointmentData.rescheduled
-          ? `Rendez-vous reporté - ${appointmentData.startFormatted}`
-          : `Votre rendez-vous - ${appointmentData.startFormatted}`,
+          ? `Appointment rescheduled - ${appointmentData.startFormatted}`
+          : `Your appointment - ${appointmentData.startFormatted}`,
       });
       return true;
     } catch (error) {

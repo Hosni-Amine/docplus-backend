@@ -54,3 +54,6 @@ FolderSchema.virtual('user', {
   foreignField: '_id',
   justOne: true,
 });
+
+FolderSchema.index({ officeId: 1, isDeleted: 1 });
+FolderSchema.index({ userId: 1, isDeleted: 1 });

@@ -53,3 +53,6 @@ export class FolderDocument extends AbstractDocument {
 
 export const FolderDocumentSchema =
   SchemaFactory.createForClass(FolderDocument);
+
+FolderDocumentSchema.index({ folderId: 1, isDeleted: 1 });
+FolderDocumentSchema.index({ officeId: 1, isDeleted: 1 });
