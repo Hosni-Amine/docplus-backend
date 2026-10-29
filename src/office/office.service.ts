@@ -57,6 +57,7 @@ export interface GetOfficeRes extends IBaseRes {
     | (Office & {
         officeAdmins?: OfficeUser[];
         currentContract?: ContractView | null;
+        contracts?: ContractView[];
       })
     | null;
 }
@@ -114,7 +115,8 @@ export class OfficeService {
   }
 
   /**
-   * Return one office when the actor is allowed to see it.
+   * Return one office when the actor is allowed to see it,
+   * including the current contract and full contract history.
    */
   async getOfficeById(id: string, actor: Actor): Promise<GetOfficeRes> {
     try {
@@ -125,11 +127,20 @@ export class OfficeService {
       if (!office) {
         return { status: 404, message: 'OFFICE_NOT_FOUND', office: null };
       }
-      const currentContract = await this.findCurrentContract(id);
+      const rawContracts = await this.contractRepository.findByOffice(id);
+      const contracts = rawContracts.map((contract) =>
+        this.toContractView(contract),
+      );
+      const currentContract =
+        contracts.find((contract) => contract.displayStatus === 'current') ??
+        contracts.find((contract) => contract.displayStatus === 'upcoming') ??
+        contracts[0] ??
+        null;
+
       return {
         status: 200,
         message: 'OFFICE_FOUND_SUCCESSFULLY',
-        office: { ...office, currentContract },
+        office: { ...office, currentContract, contracts },
       };
     } catch (error) {
       this.logger.error(error);
