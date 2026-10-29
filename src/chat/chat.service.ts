@@ -264,6 +264,48 @@ export class ChatService {
   }
 
   /**
+   * Get a single conversation with its participants and messages.
+   */
+  async getConversationById(
+    id: string,
+    actor: Actor,
+  ): Promise<GetConversationRes> {
+    try {
+      if (!actor.officeId || !actor.id) {
+        return { status: 403, message: 'OFFICE_REQUIRED', conversation: null };
+      }
+
+      const conversation =
+        await this.conversationRepository.findOneWithParticipants({
+          _id: id,
+          officeId: actor.officeId,
+          participants: new Types.ObjectId(actor.id),
+        });
+
+      if (!conversation) {
+        return {
+          status: 404,
+          message: 'CONVERSATION_NOT_FOUND',
+          conversation: null,
+        };
+      }
+
+      return {
+        status: 200,
+        message: 'CONVERSATION_FOUND_SUCCESSFULLY',
+        conversation: await this.withUnread(conversation, actor.id),
+      };
+    } catch (error) {
+      this.logger.error(error);
+      return {
+        status: 500,
+        message: 'INTERNAL_SERVER_ERROR',
+        conversation: null,
+      };
+    }
+  }
+
+  /**
    * Messages of a conversation, oldest first, one page at a time.
    * `before` is the created_at of the oldest message already loaded.
    */

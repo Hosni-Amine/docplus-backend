@@ -6,6 +6,10 @@ import { listUserFields } from '../user/user.fields';
 import { Conversation } from './entities/conversation.entity';
 
 const participantsPopulate = { path: 'participants', select: listUserFields };
+const messagesPopulate = {
+  path: 'messages',
+  options: { sort: { created_at: 1 } },
+};
 
 @Injectable()
 export class ConversationRepository extends AbstractRepository<Conversation> {
@@ -26,7 +30,8 @@ export class ConversationRepository extends AbstractRepository<Conversation> {
       .find(filterQuery)
       .sort({ lastMessageAt: -1, created_at: -1 })
       .populate(participantsPopulate)
-      .lean();
+      .populate(messagesPopulate)
+      .lean({ virtuals: true });
   }
 
   findOneWithParticipants(
@@ -35,6 +40,7 @@ export class ConversationRepository extends AbstractRepository<Conversation> {
     return this.conversationModel
       .findOne(filterQuery)
       .populate(participantsPopulate)
-      .lean();
+      .populate(messagesPopulate)
+      .lean({ virtuals: true });
   }
 }

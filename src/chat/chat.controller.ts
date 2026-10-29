@@ -54,6 +54,14 @@ export class ChatController {
     return this.chatService.createConversation(input, actor);
   }
 
+  @Get('conversations/:id')
+  async getConversation(
+    @Param('id') id: string,
+    @CurrentUser() actor: Actor,
+  ): Promise<GetConversationRes> {
+    return this.chatService.getConversationById(id, actor);
+  }
+
   @Get('conversations/:id/messages')
   async getMessages(
     @Param('id') id: string,

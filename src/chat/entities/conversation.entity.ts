@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
 import { AbstractDocument } from '../../common';
+import { Message } from './message.entity';
 
 export enum EConversationType {
   ONE_TO_ONE = 'ONE_TO_ONE',
@@ -65,9 +66,18 @@ export class Conversation extends AbstractDocument {
 
   @Prop({ type: SchemaTypes.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
+
+  messages?: Message[];
 }
 
 export const ConversationSchema = SchemaFactory.createForClass(Conversation);
+
+ConversationSchema.virtual('messages', {
+  ref: 'Message',
+  localField: '_id',
+  foreignField: 'conversationId',
+  options: { sort: { created_at: 1 } },
+});
 
 ConversationSchema.index({ officeId: 1, participants: 1, lastMessageAt: -1 });
 ConversationSchema.index(
