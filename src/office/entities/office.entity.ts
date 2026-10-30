@@ -1,6 +1,7 @@
 import {
   AbstractDocument,
   ECareRecipientLabel,
+  EOfficeService,
   EOfficeStatus,
   ERole,
   EUserStatus,
@@ -17,6 +18,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 export class Office extends AbstractDocument {
   @Prop({ required: true })
   legalName: string;
+
+  /** Medical office / facility / department type. */
+  @Prop({ enum: EOfficeService, type: String })
+  service?: EOfficeService;
 
   @Prop()
   phone?: string;

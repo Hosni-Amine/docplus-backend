@@ -41,8 +41,8 @@ export class Appointment extends AbstractDocument {
   userId: Types.ObjectId;
 
   /** Staff / Doctor admin (role ADMIN). */
-  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
-  adminId?: Types.ObjectId;
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User', required: true })
+  adminId: Types.ObjectId;
 
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Office', required: true })
   officeId: Types.ObjectId;

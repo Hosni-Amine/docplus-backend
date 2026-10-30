@@ -47,7 +47,7 @@ export class CreateAppointmentInput {
   userId: string;
 
   /** Staff / Doctor admin id (role ADMIN). */
-  @IsOptional()
   @IsString()
-  adminId?: string;
+  @IsNotEmpty()
+  adminId: string;
 }

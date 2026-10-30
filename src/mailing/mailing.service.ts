@@ -243,7 +243,10 @@ export class MailingService {
       fullname: string;
       title: string;
       startFormatted: string;
+      otherPartyName?: string;
+      locationPhrase?: string;
       practitionerName?: string;
+      attendeeName?: string;
       consultationTypeLabel?: string;
       address?: string;
       phone?: string;
@@ -252,13 +255,27 @@ export class MailingService {
     },
   ): Promise<boolean> {
     try {
+      let subject: string;
+      if (appointmentData.rescheduled) {
+        subject = appointmentData.otherPartyName
+          ? `Appointment rescheduled with ${appointmentData.otherPartyName} - ${appointmentData.startFormatted}`
+          : `Appointment rescheduled - ${appointmentData.startFormatted}`;
+      } else {
+        subject = appointmentData.otherPartyName
+          ? `Appointment confirmation with ${appointmentData.otherPartyName} - ${appointmentData.startFormatted}`
+          : `Your appointment - ${appointmentData.startFormatted}`;
+      }
+
       await this.sendMail({
         templatePath: MailTemplate.AppointmentInvitation,
         context: {
           fullname: appointmentData.fullname,
           title: appointmentData.title,
           startFormatted: appointmentData.startFormatted,
+          otherPartyName: appointmentData.otherPartyName ?? '',
+          locationPhrase: appointmentData.locationPhrase ?? '',
           practitionerName: appointmentData.practitionerName ?? '',
+          attendeeName: appointmentData.attendeeName ?? '',
           consultationTypeLabel: appointmentData.consultationTypeLabel ?? '',
           address: appointmentData.address ?? '',
           phone: appointmentData.phone ?? '',
@@ -266,9 +283,7 @@ export class MailingService {
           rescheduled: appointmentData.rescheduled ?? false,
         },
         to: email,
-        subject: appointmentData.rescheduled
-          ? `Appointment rescheduled - ${appointmentData.startFormatted}`
-          : `Your appointment - ${appointmentData.startFormatted}`,
+        subject,
       });
       return true;
     } catch (error) {

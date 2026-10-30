@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Types } from 'mongoose';
-import { EConsultationType, ERole, EUserStatus } from '../common';
+import { buildFrontendUrl, EConsultationType, ERole } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { MailingService } from '../mailing/mailing.service';
 import { User } from '../user/entities/user.entity';
@@ -58,19 +58,6 @@ export class AppointmentService {
         return { status: 400, message: dateError, appointment: null };
       }
 
-      const userCheck = await this.resolveAttendeeUser(
-        input.userId,
-        officeId,
-        actor,
-      );
-      if (userCheck.error) {
-        return {
-          status: userCheck.status,
-          message: userCheck.error,
-          appointment: null,
-        };
-      }
-
       const appointment = await this.appointmentRepository.create({
         title: input.title,
         description: input.description,
@@ -79,14 +66,24 @@ export class AppointmentService {
         start: new Date(input.start),
         end: new Date(input.end),
         userId: new Types.ObjectId(input.userId),
-        adminId: input.adminId ? new Types.ObjectId(input.adminId) : undefined,
+        adminId: new Types.ObjectId(input.adminId),
         officeId: new Types.ObjectId(officeId),
         consultationType: input.consultationType,
         isDeleted: false,
       });
 
-      if (userCheck.user) {
-        await this.notifyAttendee(appointment, userCheck.user, false);
+      const [attendee, practitioner] = await Promise.all([
+        this.userRepository.findOne({ _id: appointment.userId }),
+        this.userRepository.findOne({ _id: appointment.adminId }),
+      ]);
+
+      if (attendee && practitioner) {
+        await this.notifyParticipants(
+          appointment,
+          attendee,
+          practitioner,
+          false,
+        );
       }
 
       const populated = await this.appointmentRepository.findOneWithUser({
@@ -203,21 +200,6 @@ export class AppointmentService {
         return { status: 400, message: dateError, appointment: null };
       }
 
-      if (input.userId) {
-        const userCheck = await this.resolveAttendeeUser(
-          input.userId,
-          existing.officeId.toString(),
-          actor,
-        );
-        if (userCheck.error) {
-          return {
-            status: userCheck.status,
-            message: userCheck.error,
-            appointment: null,
-          };
-        }
-      }
-
       const {
         id,
         userId,
@@ -256,17 +238,18 @@ export class AppointmentService {
           (updates.end instanceof Date &&
             updates.end.getTime() !== new Date(existing.end).getTime());
 
-        const typeChanged =
-          updates.consultationType !== undefined &&
-          updates.consultationType !== existing.consultationType;
+        const [attendee, practitioner] = await Promise.all([
+          this.userRepository.findOne({ _id: appointment.userId }),
+          this.userRepository.findOne({ _id: appointment.adminId }),
+        ]);
 
-        if (rescheduled || typeChanged) {
-          const attendee = await this.userRepository.findOne({
-            _id: appointment.userId,
-          });
-          if (attendee) {
-            await this.notifyAttendee(appointment, attendee, rescheduled);
-          }
+        if (attendee && practitioner) {
+          await this.notifyParticipants(
+            appointment,
+            attendee,
+            practitioner,
+            rescheduled,
+          );
         }
       }
 
@@ -317,39 +300,30 @@ export class AppointmentService {
   }
 
   /**
-   * Email the attendee their appointment details, with a one-click join link
-   * when the consultation is held over video.
-   *
-   * A failure here never fails the appointment: the record is already saved.
+   * Send appointment confirmation/reschedule emails to both the attendee and the practitioner.
    */
-  private async notifyAttendee(
+  private async notifyParticipants(
     appointment: Appointment,
     attendee: User,
+    practitioner: User,
     rescheduled: boolean,
   ): Promise<void> {
     try {
-      if (!attendee.email) {
-        return;
-      }
-
-      let practitioner: User | null = null;
-      let practitionerName: string | undefined;
-      if (appointment.adminId) {
-        practitioner = await this.userRepository.findOne({
-          _id: appointment.adminId,
-        });
-        if (practitioner) {
-          practitionerName =
-            [practitioner.firstName, practitioner.lastName]
-              .filter(Boolean)
-              .join(' ') || practitioner.email;
-        }
-      }
+      const startFormatted = this.formatAppointmentDate(appointment.start);
+      const practitionerName =
+        [practitioner.firstName, practitioner.lastName]
+          .filter(Boolean)
+          .join(' ') || practitioner.email;
+      const attendeeName =
+        [attendee.firstName, attendee.lastName].filter(Boolean).join(' ') ||
+        attendee.email;
 
       let address: string | undefined;
       let phone: string | undefined;
       let consultationTypeLabel: string | undefined;
-      let joinUrl: string | undefined;
+      let locationPhrase: string | undefined;
+      let attendeeJoinUrl: string | undefined;
+      let adminJoinUrl: string | undefined;
 
       switch (appointment.consultationType) {
         case EConsultationType.IN_OFFICE: {
@@ -367,6 +341,7 @@ export class AppointmentService {
               .filter(Boolean);
             address = parts.join(', ') || office.address?.trim() || undefined;
           }
+          locationPhrase = address ? `at ${address}` : 'at the office';
           break;
         }
         case EConsultationType.HOME_VISIT: {
@@ -379,6 +354,7 @@ export class AppointmentService {
             .map((p) => p?.trim())
             .filter(Boolean);
           address = parts.join(', ') || attendee.address?.trim() || undefined;
+          locationPhrase = address ? `at ${address}` : 'at home';
           break;
         }
         case EConsultationType.PHONE: {
@@ -388,22 +364,30 @@ export class AppointmentService {
           });
           const rawPhone =
             attendee.phone?.trim() ||
-            practitioner?.phone?.trim() ||
+            practitioner.phone?.trim() ||
             office?.phone?.trim();
           phone = rawPhone || undefined;
+          locationPhrase = phone ? `by phone (${phone})` : 'by phone';
           break;
         }
         case EConsultationType.VIDEO: {
           consultationTypeLabel = 'Video consultation';
-          const inviteToken = await this.inviteService.sign({
-            appointmentId: appointment._id.toString(),
-            userId: attendee._id.toString(),
-            email: attendee.email,
-            end: appointment.end,
-          });
-          joinUrl = this.inviteService.buildJoinLink(
-            appointment._id.toString(),
-            inviteToken,
+          locationPhrase = 'via video consultation';
+          if (attendee.email) {
+            const inviteToken = await this.inviteService.sign({
+              appointmentId: appointment._id.toString(),
+              userId: attendee._id.toString(),
+              email: attendee.email,
+              end: appointment.end,
+            });
+            attendeeJoinUrl = this.inviteService.buildJoinLink(
+              appointment._id.toString(),
+              inviteToken,
+            );
+          }
+          adminJoinUrl = buildFrontendUrl(
+            this.configService.get<string>('FRONTEND_URL'),
+            `/dashboard/consultation/${appointment._id.toString()}`,
           );
           break;
         }
@@ -411,21 +395,44 @@ export class AppointmentService {
           break;
       }
 
-      await this.mailingService.sendAppointmentInvitation(attendee.email, {
-        fullname:
-          [attendee.firstName, attendee.lastName].filter(Boolean).join(' ') ||
-          attendee.email,
-        title: appointment.title,
-        startFormatted: this.formatAppointmentDate(appointment.start),
-        practitionerName,
-        consultationTypeLabel,
-        address,
-        phone,
-        joinUrl,
-        rescheduled,
-      });
+      // Notify attendee
+      if (attendee.email) {
+        await this.mailingService.sendAppointmentInvitation(attendee.email, {
+          fullname: attendeeName,
+          title: appointment.title,
+          startFormatted,
+          otherPartyName: practitionerName,
+          locationPhrase,
+          practitionerName,
+          consultationTypeLabel,
+          address,
+          phone,
+          joinUrl: attendeeJoinUrl,
+          rescheduled,
+        });
+      }
+
+      // Notify practitioner/admin
+      if (practitioner.email) {
+        await this.mailingService.sendAppointmentInvitation(
+          practitioner.email,
+          {
+            fullname: practitionerName,
+            title: appointment.title,
+            startFormatted,
+            otherPartyName: attendeeName,
+            locationPhrase,
+            attendeeName,
+            consultationTypeLabel,
+            address,
+            phone,
+            joinUrl: adminJoinUrl,
+            rescheduled,
+          },
+        );
+      }
     } catch (error) {
-      this.logger.error('Failed to notify appointment attendee', error);
+      this.logger.error('Failed to notify appointment participants', error);
     }
   }
 
@@ -442,33 +449,6 @@ export class AppointmentService {
     } catch {
       return new Date(date).toISOString();
     }
-  }
-
-  private async resolveAttendeeUser(
-    userId: string,
-    officeId: string,
-    actor: Actor,
-  ): Promise<{ status: number; error?: string; user?: User }> {
-    const user = await this.userRepository.findOne({
-      _id: userId,
-      status: { $ne: EUserStatus.DELETED },
-    });
-    if (!user) {
-      return { status: 404, error: 'USER_NOT_FOUND' };
-    }
-    if (user.role !== ERole.USER) {
-      return { status: 400, error: 'INVALID_USER_ROLE' };
-    }
-    if (!user.officeId) {
-      return { status: 400, error: 'OFFICE_REQUIRED' };
-    }
-    if (!this.canAccess(actor, user.officeId.toString())) {
-      return { status: 403, error: 'FORBIDDEN' };
-    }
-    if (user.officeId.toString() !== officeId) {
-      return { status: 400, error: 'USER_OFFICE_MISMATCH' };
-    }
-    return { status: 200, user };
   }
 
   private getDateError(

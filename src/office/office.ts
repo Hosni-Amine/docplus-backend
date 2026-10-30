@@ -1,3 +1,4 @@
+import { OfficeService } from './office.service';
 import type { User } from '../user/entities/user.entity';
 
 export enum OfficeStatus {
@@ -79,6 +80,7 @@ export type WorkingHours = {
 export type Office = {
   _id: string;
   legalName: string;
+  service?: OfficeService;
   phone?: string;
   email?: string;
   address?: string;

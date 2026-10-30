@@ -7,13 +7,17 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { ECareRecipientLabel } from '../../common';
+import { ECareRecipientLabel, EOfficeService } from '../../common';
 import { WorkingHoursDto } from './working-hours.dto';
 
 export class CreateOfficeInput {
   @IsString()
   @IsNotEmpty()
   legalName: string;
+
+  @IsOptional()
+  @IsEnum(EOfficeService)
+  service?: EOfficeService;
 
   @IsOptional()
   @IsString()
