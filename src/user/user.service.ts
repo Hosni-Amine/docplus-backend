@@ -16,7 +16,7 @@ import { UserRepository } from './user.repository';
 import { IBaseRes } from '../common/responses.dto';
 import { GetAllUsersRes, GetUserRes } from './user.controller';
 import { User } from './entities/user.entity';
-import { listUserFields, publicUserFields } from './user.fields';
+import { listUserFields, privateUserFields } from './user.fields';
 
 type Actor = {
   id?: string;
@@ -69,6 +69,7 @@ export class UserService {
       const newUser = await this.userRepository.create({
         ...rest,
         isPublic: false,
+        verified: false,
         emailAppointmentReminders: true,
         emailAppointmentConfirmations: true,
         status: EUserStatus.ACTIVE,
@@ -130,6 +131,7 @@ export class UserService {
       const newUser = await this.userRepository.create({
         ...rest,
         isPublic: false,
+        verified: false,
         emailAppointmentReminders: true,
         emailAppointmentConfirmations: true,
         status: EUserStatus.ACTIVE,
@@ -231,6 +233,12 @@ export class UserService {
       const canSetPublic = isSelf || isSuperAdmin || !!actor?.isOwner;
       if ('isPublic' in updates && !canSetPublic) {
         delete updates.isPublic;
+      }
+
+      // Verified badge: super admin only.
+      const canSetVerified = isSuperAdmin || !!actor?.isOwner;
+      if ('verified' in updates && !canSetVerified) {
+        delete updates.verified;
       }
 
       // Role and status stay out of the profile payload. Only a super admin can set them.
@@ -409,7 +417,7 @@ export class UserService {
     try {
       const user = await this.userRepository.findOne(
         { _id: id },
-        { select: publicUserFields },
+        { select: privateUserFields },
       );
       if (!user) {
         return this.result(404, 'USER_NOT_FOUND');

@@ -2,13 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, FilterQuery, Model } from 'mongoose';
 import { AbstractRepository } from '../common';
-import { publicUserFields } from '../user/user.fields';
+import { populateUserFields } from '../user/user.fields';
 import { Folder } from './entities/folder.entity';
 
 const folderUserPopulate = [
-  { path: 'user', select: publicUserFields },
-  { path: 'createdBy', select: publicUserFields },
-  { path: 'lastUpdatedBy', select: publicUserFields },
+  { path: 'user', select: populateUserFields },
+  { path: 'createdBy', select: populateUserFields },
+  { path: 'lastUpdatedBy', select: populateUserFields },
 ];
 
 @Injectable()

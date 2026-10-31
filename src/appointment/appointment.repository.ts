@@ -2,12 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, FilterQuery, Model } from 'mongoose';
 import { AbstractRepository } from '../common';
-import { publicUserFields } from '../user/user.fields';
+import { populateUserFields } from '../user/user.fields';
 import { Appointment } from './entities/appointment.entity';
 
 const appointmentPopulate = [
-  { path: 'user', select: publicUserFields },
-  { path: 'admin', select: publicUserFields },
+  { path: 'user', select: populateUserFields },
+  { path: 'admin', select: populateUserFields },
 ];
 
 @Injectable()

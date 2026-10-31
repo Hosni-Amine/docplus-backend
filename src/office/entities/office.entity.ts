@@ -41,6 +41,13 @@ export class Office extends AbstractDocument {
   @Prop()
   zipCode?: string;
 
+  /** Geo coordinates for map / distance search. */
+  @Prop()
+  lat?: number;
+
+  @Prop()
+  lng?: number;
+
   /**
    * IANA timezone for this office location (e.g. Europe/Paris).
    * Working hours and reminder emails use this; falls back to APP_TIMEZONE.

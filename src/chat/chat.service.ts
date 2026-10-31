@@ -4,7 +4,7 @@ import { ERole, EUserStatus } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { deleteUploadedFile } from '../common/file-uploader';
 import { User } from '../user/entities/user.entity';
-import { listUserFields } from '../user/user.fields';
+import { populateUserFields } from '../user/user.fields';
 import { UserRepository } from '../user/user.repository';
 import { OfficeRepository } from '../office/office.repository';
 import { ChatGateway } from './chat.gateway';
@@ -149,7 +149,7 @@ export class ChatService {
           status: EUserStatus.ACTIVE,
           _id: { $ne: new Types.ObjectId(actor.id) },
         },
-        listUserFields,
+        populateUserFields,
       );
       return { status: 200, message: 'CONTACTS_FOUND_SUCCESSFULLY', contacts };
     } catch (error) {
@@ -610,7 +610,7 @@ export class ChatService {
         role: ERole.ADMIN,
         status: EUserStatus.ACTIVE,
       },
-      listUserFields,
+      populateUserFields,
     );
     const participantIds = admins.map((user) => user._id);
 

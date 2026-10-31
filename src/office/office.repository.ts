@@ -2,12 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
 import { AbstractRepository, ERole, EUserStatus } from '../common';
-import { publicUserFields } from '../user/user.fields';
+import { listUserFields } from '../user/user.fields';
 import { Office } from './entities/office.entity';
 
 const officeAdminsPopulate = {
   path: 'officeAdmins',
-  select: publicUserFields,
+  select: listUserFields,
   match: { role: ERole.ADMIN, status: { $ne: EUserStatus.DELETED } },
 };
 

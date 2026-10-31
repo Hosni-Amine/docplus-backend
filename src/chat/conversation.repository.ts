@@ -2,10 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, FilterQuery, Model } from 'mongoose';
 import { AbstractRepository } from '../common';
-import { listUserFields } from '../user/user.fields';
+import { populateUserFields } from '../user/user.fields';
 import { Conversation } from './entities/conversation.entity';
 
-const participantsPopulate = { path: 'participants', select: listUserFields };
+const participantsPopulate = {
+  path: 'participants',
+  select: populateUserFields,
+};
 const messagesPopulate = {
   path: 'messages',
   options: { sort: { created_at: 1 } },

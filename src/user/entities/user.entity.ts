@@ -6,6 +6,7 @@ import {
   EUserStatus,
   EOfficeStaffRole,
   EMedicalSpecialty,
+  ESpokenLanguage,
 } from '../../common';
 
 @Schema({
@@ -109,6 +110,18 @@ export class User extends AbstractDocument {
 
   @Prop({ type: [String], default: [] })
   study?: string[];
+
+  /** Spoken languages (e.g. French, English). */
+  @Prop({ type: [{ type: String, enum: ESpokenLanguage }], default: [] })
+  languages?: ESpokenLanguage[];
+
+  /** Platform-verified doctor profile (super admin only). */
+  @Prop({ default: false })
+  verified: boolean;
+
+  /** Years of professional experience. */
+  @Prop()
+  experienceYears?: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

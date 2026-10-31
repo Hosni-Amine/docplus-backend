@@ -57,6 +57,30 @@ export enum EMedicalSpecialty {
   AESTHETIC_MEDICINE = 'aesthetic_medicine',
 }
 
+/** Spoken languages a staff member may declare (multi-select). */
+export enum ESpokenLanguage {
+  ENGLISH = 'english',
+  FRENCH = 'french',
+  GERMAN = 'german',
+  POLISH = 'polish',
+  PORTUGUESE = 'portuguese',
+  SPANISH = 'spanish',
+  ITALIAN = 'italian',
+  DUTCH = 'dutch',
+  ARABIC = 'arabic',
+  UKRAINIAN = 'ukrainian',
+  RUSSIAN = 'russian',
+  TURKISH = 'turkish',
+  ROMANIAN = 'romanian',
+  GREEK = 'greek',
+  SWEDISH = 'swedish',
+  NORWEGIAN = 'norwegian',
+  DANISH = 'danish',
+  CZECH = 'czech',
+  HUNGARIAN = 'hungarian',
+  CHINESE = 'chinese',
+}
+
 export enum EUserStatus {
   ACTIVE = 'active',
   PENDING_APPROVAL = 'pending_approval',

@@ -89,6 +89,9 @@ export type Office = {
   state?: string;
   city?: string;
   zipCode?: string;
+  lat?: number;
+  lng?: number;
+  timezone?: string;
   status?: OfficeStatus;
   careRecipientLabel?: CareRecipientLabel;
   workingHours?: WorkingHours | null;

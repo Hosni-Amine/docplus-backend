@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsEnum,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   ValidateNested,
@@ -42,6 +43,16 @@ export class CreateOfficeInput {
   @IsOptional()
   @IsString()
   zipCode?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lat?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lng?: number;
 
   /** IANA timezone (e.g. Europe/Paris). */
   @IsOptional()
