@@ -26,6 +26,7 @@ export type OfficeUser = {
   email?: string;
   role?: ERole;
   officeStaffRole?: string | null;
+  specialty?: string[];
   isOwner?: boolean;
   status?: EUserStatus;
   avatarUrl?: string;

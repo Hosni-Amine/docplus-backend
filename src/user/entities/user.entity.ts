@@ -1,6 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
-import { AbstractDocument, ERole, EUserStatus } from '../../common';
+import {
+  AbstractDocument,
+  ERole,
+  EUserStatus,
+  EOfficeStaffRole,
+  EMedicalSpecialty,
+} from '../../common';
 
 @Schema({
   versionKey: false,
@@ -31,8 +37,11 @@ export class User extends AbstractDocument {
   @Prop({ enum: ERole, type: String })
   role: ERole;
 
-  @Prop({ type: String, default: null })
-  officeStaffRole?: string | null;
+  @Prop({ enum: EOfficeStaffRole, type: String, default: null })
+  officeStaffRole?: EOfficeStaffRole | null;
+
+  @Prop({ type: [{ type: String, enum: EMedicalSpecialty }], default: [] })
+  specialty?: EMedicalSpecialty[];
 
   @Prop({ default: false })
   isOwner?: boolean;

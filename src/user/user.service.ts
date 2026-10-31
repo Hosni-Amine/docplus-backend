@@ -207,6 +207,15 @@ export class UserService {
         return this.result(403, 'FORBIDDEN');
       }
 
+      // officeStaffRole + specialty: owner, super admin, or the user themselves only.
+      const canEditStaffProfile = isSuperAdmin || isSelf || !!actor.isOwner;
+      if (
+        !canEditStaffProfile &&
+        (rest.officeStaffRole !== undefined || rest.specialty !== undefined)
+      ) {
+        return this.result(403, 'FORBIDDEN');
+      }
+
       if (rest.email && (await this.emailTaken(rest.email, id))) {
         this.logger.error(`This mail address ${rest.email} is already in use`);
         return this.result(400, 'EMAIL_ALREADY_IN_USE');

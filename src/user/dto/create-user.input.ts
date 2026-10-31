@@ -1,11 +1,13 @@
 import {
+  IsArray,
   IsEmail,
+  IsEnum,
   IsMongoId,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ERole } from '../../common';
+import { EMedicalSpecialty, EOfficeStaffRole, ERole } from '../../common';
 
 export class CreateUserInput {
   @IsEmail()
@@ -49,12 +51,17 @@ export class CreateUserInput {
   notes?: string;
 
   @IsNotEmpty()
-  @IsString()
+  @IsEnum(ERole)
   role: ERole;
 
   @IsOptional()
-  @IsString()
-  officeStaffRole?: string;
+  @IsEnum(EOfficeStaffRole)
+  officeStaffRole?: EOfficeStaffRole;
+
+  @IsOptional()
+  @IsArray()
+  @IsEnum(EMedicalSpecialty, { each: true })
+  specialty?: EMedicalSpecialty[];
 
   @IsOptional()
   @IsMongoId()

@@ -4,6 +4,59 @@ export enum ERole {
   USER = 'USER',
 }
 
+/** Clinical / medical role of an office staff member (ADMIN). */
+export enum EOfficeStaffRole {
+  DOCTOR = 'doctor',
+  TECHNICIAN = 'technician',
+  SECRETARY = 'secretary',
+  WORKER = 'worker',
+}
+
+/** Medical specialties a staff member may declare (multi-select). */
+export enum EMedicalSpecialty {
+  GENERAL_PRACTICE = 'general_practice',
+  RADIOLOGY = 'radiology',
+  THERAPY = 'therapy',
+  PHYSIOTHERAPY = 'physiotherapy',
+  PSYCHOTHERAPY = 'psychotherapy',
+  SPEECH_THERAPY = 'speech_therapy',
+  OCCUPATIONAL_THERAPY = 'occupational_therapy',
+  DENTAL = 'dental',
+  OPHTHALMOLOGY = 'ophthalmology',
+  DERMATOLOGY = 'dermatology',
+  CARDIOLOGY = 'cardiology',
+  PEDIATRICS = 'pediatrics',
+  GYNECOLOGY = 'gynecology',
+  OBSTETRICS = 'obstetrics',
+  ORTHOPEDICS = 'orthopedics',
+  OTORHINOLARYNGOLOGY = 'otorhinolaryngology',
+  NEUROLOGY = 'neurology',
+  PSYCHIATRY = 'psychiatry',
+  ONCOLOGY = 'oncology',
+  UROLOGY = 'urology',
+  GASTROENTEROLOGY = 'gastroenterology',
+  PULMONOLOGY = 'pulmonology',
+  ENDOCRINOLOGY = 'endocrinology',
+  RHEUMATOLOGY = 'rheumatology',
+  NEPHROLOGY = 'nephrology',
+  SURGERY = 'surgery',
+  PLASTIC_SURGERY = 'plastic_surgery',
+  ANESTHESIOLOGY = 'anesthesiology',
+  EMERGENCY = 'emergency',
+  OSTEOPATHY = 'osteopathy',
+  CHIROPRACTIC = 'chiropractic',
+  ACUPUNCTURE = 'acupuncture',
+  NUTRITION = 'nutrition',
+  MIDWIFERY = 'midwifery',
+  PODIATRY = 'podiatry',
+  ALLERGOLOGY = 'allergology',
+  INFECTIOUS_DISEASE = 'infectious_disease',
+  GERIATRICS = 'geriatrics',
+  PALLIATIVE_CARE = 'palliative_care',
+  SPORTS_MEDICINE = 'sports_medicine',
+  AESTHETIC_MEDICINE = 'aesthetic_medicine',
+}
+
 export enum EUserStatus {
   ACTIVE = 'active',
   PENDING_APPROVAL = 'pending_approval',
