@@ -39,6 +39,14 @@ export class UpdateUserInput extends PartialType(
   isPublic?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  emailAppointmentReminders?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  emailAppointmentConfirmations?: boolean;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   currentWork?: string[];

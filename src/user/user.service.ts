@@ -69,6 +69,8 @@ export class UserService {
       const newUser = await this.userRepository.create({
         ...rest,
         isPublic: false,
+        emailAppointmentReminders: true,
+        emailAppointmentConfirmations: true,
         status: EUserStatus.ACTIVE,
         role,
         officeId:
@@ -128,6 +130,8 @@ export class UserService {
       const newUser = await this.userRepository.create({
         ...rest,
         isPublic: false,
+        emailAppointmentReminders: true,
+        emailAppointmentConfirmations: true,
         status: EUserStatus.ACTIVE,
         role,
         officeId: new Types.ObjectId(officeId),
@@ -222,6 +226,12 @@ export class UserService {
       }
 
       const updates: Partial<User> = { ...rest };
+
+      // Public profile: the user themself, a platform admin, or an office owner can change it.
+      const canSetPublic = isSelf || isSuperAdmin || !!actor?.isOwner;
+      if ('isPublic' in updates && !canSetPublic) {
+        delete updates.isPublic;
+      }
 
       // Role and status stay out of the profile payload. Only a super admin can set them.
       if (isSuperAdmin) {

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
@@ -20,6 +21,7 @@ import { JwtSignOptions } from '@nestjs/jwt';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     DatabaseModule,
     GuardsModule,
     AuthModule,

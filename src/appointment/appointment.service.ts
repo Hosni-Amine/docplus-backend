@@ -395,8 +395,8 @@ export class AppointmentService {
           break;
       }
 
-      // Notify attendee
-      if (attendee.email) {
+      // Notify attendee (respect confirmation email preference)
+      if (attendee.email && attendee.emailAppointmentConfirmations !== false) {
         await this.mailingService.sendAppointmentInvitation(attendee.email, {
           fullname: attendeeName,
           title: appointment.title,
@@ -412,8 +412,11 @@ export class AppointmentService {
         });
       }
 
-      // Notify practitioner/admin
-      if (practitioner.email) {
+      // Notify practitioner/admin (respect confirmation email preference)
+      if (
+        practitioner.email &&
+        practitioner.emailAppointmentConfirmations !== false
+      ) {
         await this.mailingService.sendAppointmentInvitation(
           practitioner.email,
           {

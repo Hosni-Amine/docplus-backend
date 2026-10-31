@@ -43,6 +43,11 @@ export class CreateOfficeInput {
   @IsString()
   zipCode?: string;
 
+  /** IANA timezone (e.g. Europe/Paris). */
+  @IsOptional()
+  @IsString()
+  timezone?: string;
+
   @IsOptional()
   @IsEmail()
   email?: string;

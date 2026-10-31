@@ -91,6 +91,7 @@ export class OfficeService {
     try {
       const office = await this.officeRepository.create({
         ...input,
+        timezone: input.timezone?.trim() || 'Europe/Paris',
         status: EOfficeStatus.ACTIVE,
         careRecipientLabel:
           input.careRecipientLabel ?? ECareRecipientLabel.PATIENT,

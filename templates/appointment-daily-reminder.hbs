@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your appointments today</title>
+</head>
+
+<body style="margin:0;padding:0;background-color:#eef2f6;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+    You have {{appointmentCount}} appointment{{#unless isSingular}}s{{/unless}} today ({{dateFormatted}}).
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+    style="background-color:#eef2f6;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+          style="max-width:640px;background-color:#ffffff;border-radius:16px;">
+          <tr>
+            <td
+              style="padding:32px 32px 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+              <p
+                style="margin:0;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#0f4c81;">
+                DocPlus</p>
+              <h1 style="margin:12px 0 0;font-size:24px;line-height:1.3;font-weight:600;color:#122033;">Your day ahead
+              </h1>
+            </td>
+          </tr>
+          <tr>
+            <td
+              style="padding:8px 32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#243140;">
+              <p style="margin:16px 0 0;">Hello {{fullname}},</p>
+              <p style="margin:12px 0 0;">
+                The office opens at <strong>{{officeOpenTime}}</strong>. You have
+                <strong>{{appointmentCount}}</strong> appointment{{#unless isSingular}}s{{/unless}} on
+                <strong>{{dateFormatted}}</strong>{{#if officeName}} at {{officeName}}{{/if}}.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px 8px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                style="border-collapse:collapse;border:1px solid #d7e0ea;border-radius:12px;overflow:hidden;">
+                <tr style="background-color:#f3f7fb;">
+                  <th align="left"
+                    style="padding:12px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#5c6b7a;border-bottom:1px solid #d7e0ea;">
+                    Time</th>
+                  <th align="left"
+                    style="padding:12px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#5c6b7a;border-bottom:1px solid #d7e0ea;">
+                    Appointment</th>
+                  <th align="left"
+                    style="padding:12px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#5c6b7a;border-bottom:1px solid #d7e0ea;">
+                    Patient / Client</th>
+                  <th align="left"
+                    style="padding:12px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#5c6b7a;border-bottom:1px solid #d7e0ea;">
+                    Type</th>
+                </tr>
+                {{#each appointments}}
+                <tr>
+                  <td
+                    style="padding:12px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#122033;border-bottom:1px solid #e8eef4;white-space:nowrap;">
+                    {{timeRange}}</td>
+                  <td
+                    style="padding:12px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#243140;border-bottom:1px solid #e8eef4;">
+                    {{title}}</td>
+                  <td
+                    style="padding:12px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#243140;border-bottom:1px solid #e8eef4;">
+                    {{attendeeName}}</td>
+                  <td
+                    style="padding:12px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#5c6b7a;border-bottom:1px solid #e8eef4;">
+                    {{consultationTypeLabel}}</td>
+                </tr>
+                {{/each}}
+              </table>
+            </td>
+          </tr>
+          {{#if calendarUrl}}
+          <tr>
+            <td align="center"
+              style="padding:24px 32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+              <a href="{{calendarUrl}}"
+                style="display:inline-block;padding:14px 28px;border-radius:10px;background-color:#0f4c81;color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;">Open
+                calendar</a>
+            </td>
+          </tr>
+          {{/if}}
+          <tr>
+            <td
+              style="padding:28px 32px 32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#5c6b7a;">
+              <p style="margin:0;">You can manage reminder emails in Account → Notifications.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+
+</html>

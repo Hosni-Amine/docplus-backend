@@ -96,6 +96,14 @@ export class User extends AbstractDocument {
   @Prop({ default: false })
   isPublic: boolean;
 
+  /** Email before an upcoming appointment. */
+  @Prop({ default: true })
+  emailAppointmentReminders: boolean;
+
+  /** Email when an appointment is confirmed or rescheduled. */
+  @Prop({ default: true })
+  emailAppointmentConfirmations: boolean;
+
   @Prop({ type: [String], default: [] })
   currentWork?: string[];
 

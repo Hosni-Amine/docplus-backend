@@ -7,3 +7,4 @@ export * from './database/abstract.entity';
 export * from './database/abstract.repository';
 export * from './file-uploader';
 export * from './frontend-url';
+export * from './timezone.util';
