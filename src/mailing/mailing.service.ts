@@ -12,7 +12,6 @@ export enum MailTemplate {
   RequestCreated = 'request-created.hbs',
   RequestCompleted = 'request-completed.hbs',
   AppointmentInvitation = 'appointment-invitation.hbs',
-  AppointmentDailyReminder = 'appointment-daily-reminder.hbs',
 }
 
 @Injectable()
@@ -253,14 +252,26 @@ export class MailingService {
       phone?: string;
       joinUrl?: string;
       rescheduled?: boolean;
+      /** Admin / consultation type (etc.) changed, without a time change. */
+      updated?: boolean;
+      /** Upcoming reminder (~1 hour before start), not a booking confirmation. */
+      reminder?: boolean;
     },
   ): Promise<boolean> {
     try {
       let subject: string;
-      if (appointmentData.rescheduled) {
+      if (appointmentData.reminder) {
+        subject = appointmentData.otherPartyName
+          ? `Reminder: appointment with ${appointmentData.otherPartyName} - ${appointmentData.startFormatted}`
+          : `Reminder: your appointment - ${appointmentData.startFormatted}`;
+      } else if (appointmentData.rescheduled) {
         subject = appointmentData.otherPartyName
           ? `Appointment rescheduled with ${appointmentData.otherPartyName} - ${appointmentData.startFormatted}`
           : `Appointment rescheduled - ${appointmentData.startFormatted}`;
+      } else if (appointmentData.updated) {
+        subject = appointmentData.otherPartyName
+          ? `Appointment updated with ${appointmentData.otherPartyName} - ${appointmentData.startFormatted}`
+          : `Appointment updated - ${appointmentData.startFormatted}`;
       } else {
         subject = appointmentData.otherPartyName
           ? `Appointment confirmation with ${appointmentData.otherPartyName} - ${appointmentData.startFormatted}`
@@ -282,6 +293,8 @@ export class MailingService {
           phone: appointmentData.phone ?? '',
           joinUrl: appointmentData.joinUrl ?? '',
           rescheduled: appointmentData.rescheduled ?? false,
+          updated: appointmentData.updated ?? false,
+          reminder: appointmentData.reminder ?? false,
         },
         to: email,
         subject,
@@ -289,50 +302,6 @@ export class MailingService {
       return true;
     } catch (error) {
       this.logger.error('Failed to send appointment invitation email:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Daily agenda email for an admin: table of today's appointments,
-   * sent about one hour before the office opens.
-   */
-  async sendAppointmentDailyReminder(
-    email: string,
-    data: {
-      fullname: string;
-      dateFormatted: string;
-      officeOpenTime: string;
-      officeName?: string;
-      calendarUrl?: string;
-      appointments: Array<{
-        timeRange: string;
-        title: string;
-        attendeeName: string;
-        consultationTypeLabel: string;
-      }>;
-    },
-  ): Promise<boolean> {
-    try {
-      const appointmentCount = data.appointments.length;
-      await this.sendMail({
-        templatePath: MailTemplate.AppointmentDailyReminder,
-        context: {
-          fullname: data.fullname,
-          dateFormatted: data.dateFormatted,
-          officeOpenTime: data.officeOpenTime,
-          officeName: data.officeName ?? '',
-          calendarUrl: data.calendarUrl ?? '',
-          appointmentCount,
-          isSingular: appointmentCount === 1,
-          appointments: data.appointments,
-        },
-        to: email,
-        subject: `Your appointments today — ${data.dateFormatted}`,
-      });
-      return true;
-    } catch (error) {
-      this.logger.error('Failed to send appointment daily reminder email:', error);
       return false;
     }
   }

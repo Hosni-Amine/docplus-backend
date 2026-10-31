@@ -71,6 +71,10 @@ export class Appointment extends AbstractDocument {
   /** Sessions already minted from the attendee's invite link. */
   @Prop({ type: Number, default: 0 })
   inviteExchangeCount?: number;
+
+  /** Set when the upcoming (~1h) reminder emails were sent. */
+  @Prop({ type: Date, default: null })
+  reminderSentAt?: Date | null;
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);

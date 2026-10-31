@@ -1,23 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
-import { Types } from 'mongoose';
 import {
   EConsultationType,
-  EOfficeStatus,
-  ERole,
   EUserStatus,
-  buildFrontendUrl,
-  formatHm,
   getZonedParts,
-  parseHm,
   resolveTimeZone,
   wallTimeToUtc,
   zonedDayRange,
 } from '../common';
 import { MailingService } from '../mailing/mailing.service';
 import { OfficeRepository } from '../office/office.repository';
-import { Office } from '../office/entities/office.entity';
 import { User } from '../user/entities/user.entity';
 import { AppointmentRepository } from './appointment.repository';
 import { Appointment } from './entities/appointment.entity';
@@ -30,56 +23,73 @@ type PopulatedAppointment = Appointment & {
 @Injectable()
 export class AppointmentReminderService {
   private readonly logger = new Logger(AppointmentReminderService.name);
-  /** Prevents duplicate sends for the same admin on the same local day. */
-  private readonly sentKeys = new Set<string>();
 
   constructor(
-    private readonly officeRepository: OfficeRepository,
     private readonly appointmentRepository: AppointmentRepository,
+    private readonly officeRepository: OfficeRepository,
     private readonly mailingService: MailingService,
     private readonly configService: ConfigService,
   ) {}
 
   /**
-   * Every hour: for each active office (in its own timezone, 05:00–14:00),
-   * if open is in ~1 hour, email each admin their day's appointment table (≥ 1).
+   * Every 2 hours: email the attendee (user only) about each appointment
+   * scheduled for tomorrow (office timezone). Once per appointment.
    */
-  @Cron('0 * * * *')
-  async sendDailyAdminReminders(): Promise<void> {
+  @Cron('0 */2 * * *')
+  async sendTomorrowReminders(): Promise<void> {
     const appTimeZone =
       this.configService.get<string>('APP_TIMEZONE') || 'Europe/Paris';
     const now = new Date();
 
     try {
-      const offices = await this.officeRepository.find({
-        status: EOfficeStatus.ACTIVE,
-        workingHours: { $ne: null },
-      });
+      // Wide UTC window covering "tomorrow" in any reasonable office timezone.
+      const windowStart = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+      const windowEnd = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
-      for (const office of offices) {
-        await this.processOffice(office, now, appTimeZone);
+      const appointments = (await this.appointmentRepository.findWithUser({
+        isDeleted: false,
+        reminderSentAt: null,
+        start: { $gte: windowStart, $lt: windowEnd },
+      })) as PopulatedAppointment[];
+
+      if (!appointments.length) {
+        return;
       }
 
-      this.pruneSentKeys();
+      let sentCount = 0;
+      for (const appointment of appointments) {
+        const sent = await this.remindIfTomorrow(appointment, now, appTimeZone);
+        if (sent) {
+          sentCount += 1;
+        }
+      }
+
+      if (sentCount) {
+        this.logger.log(
+          `Tomorrow reminder cron: emailed ${sentCount} attendee(s)`,
+        );
+      }
     } catch (error) {
-      this.logger.error('Daily appointment reminder cron failed', error);
+      this.logger.error('Tomorrow appointment reminder cron failed', error);
     }
   }
 
-  private async processOffice(
-    office: Office,
+  private async remindIfTomorrow(
+    appointment: PopulatedAppointment,
     now: Date,
     appTimeZone: string,
-  ): Promise<void> {
-    const timeZone = resolveTimeZone(office.timezone, appTimeZone);
-    const nowParts = getZonedParts(now, timeZone);
-
-    // Reminder window in the office's local timezone.
-    if (nowParts.hour < 5 || nowParts.hour > 14) {
-      return;
+  ): Promise<boolean> {
+    let timeZone = appTimeZone;
+    try {
+      const office = await this.officeRepository.findOne({
+        _id: appointment.officeId,
+      });
+      timeZone = resolveTimeZone(office?.timezone, appTimeZone);
+    } catch {
+      // keep app timezone
     }
 
-    // Today + tomorrow covers open times near midnight (reminder falls on previous day).
+    const nowParts = getZonedParts(now, timeZone);
     const noonToday = wallTimeToUtc(
       nowParts.year,
       nowParts.month,
@@ -92,168 +102,73 @@ export class AppointmentReminderService {
       new Date(noonToday.getTime() + 24 * 60 * 60 * 1000),
       timeZone,
     );
-
-    for (const agendaDay of [nowParts, tomorrowParts]) {
-      await this.processOfficeAgendaDay(office, nowParts, agendaDay, timeZone);
-    }
-  }
-
-  private async processOfficeAgendaDay(
-    office: Office,
-    nowParts: ReturnType<typeof getZonedParts>,
-    agendaDay: ReturnType<typeof getZonedParts>,
-    timeZone: string,
-  ): Promise<void> {
-    const dayHours = office.workingHours?.[agendaDay.weekdayKey];
-    if (!dayHours?.enabled) {
-      return;
-    }
-
-    const open = parseHm(dayHours.start);
-    if (!open) {
-      return;
-    }
-
-    // Reminder = 1 hour before that day's office open (office timezone), same local hour.
-    const openUtc = wallTimeToUtc(
-      agendaDay.year,
-      agendaDay.month,
-      agendaDay.day,
-      open.hour,
-      open.minute,
+    const { start: dayStart, end: dayEnd } = zonedDayRange(
+      tomorrowParts.year,
+      tomorrowParts.month,
+      tomorrowParts.day,
       timeZone,
     );
-    const reminderParts = getZonedParts(
-      new Date(openUtc.getTime() - 60 * 60 * 1000),
-      timeZone,
-    );
+
+    const startMs = new Date(appointment.start).getTime();
+    if (startMs < dayStart.getTime() || startMs >= dayEnd.getTime()) {
+      return false;
+    }
+
+    const attendee = appointment.user;
     if (
-      reminderParts.dateKey !== nowParts.dateKey ||
-      reminderParts.hour !== nowParts.hour
+      !attendee?.email ||
+      attendee.emailAppointmentReminders === false ||
+      attendee.status === EUserStatus.DELETED ||
+      attendee.status === EUserStatus.DISABLED
     ) {
-      return;
+      return false;
     }
 
-    const { start, end } = zonedDayRange(
-      agendaDay.year,
-      agendaDay.month,
-      agendaDay.day,
-      timeZone,
+    // Claim first so concurrent ticks / instances do not double-send.
+    const claimed = await this.appointmentRepository.findOneAndUpdate(
+      {
+        _id: appointment._id,
+        isDeleted: false,
+        reminderSentAt: null,
+      },
+      { reminderSentAt: new Date() },
     );
-
-    const appointments = (await this.appointmentRepository.findWithUser({
-      officeId: office._id,
-      isDeleted: false,
-      start: { $gte: start, $lt: end },
-    })) as PopulatedAppointment[];
-
-    if (!appointments.length) {
-      return;
+    if (!claimed) {
+      return false;
     }
 
-    const byAdmin = new Map<string, PopulatedAppointment[]>();
-    for (const appointment of appointments) {
-      const adminId = appointment.adminId?.toString();
-      if (!adminId) {
-        continue;
-      }
-      const list = byAdmin.get(adminId) ?? [];
-      list.push(appointment);
-      byAdmin.set(adminId, list);
-    }
-
-    const dateFormatted = this.formatDateLabel(start, timeZone);
-    const officeOpenTime = formatHm(open.hour, open.minute);
-    const officeName = office.legalName?.trim() || undefined;
-    const calendarUrl = buildFrontendUrl(
-      this.configService.get<string>('FRONTEND_URL'),
-      '/dashboard/calendar',
-    );
-
-    for (const [adminId, adminAppointments] of byAdmin) {
-      if (!adminAppointments.length) {
-        continue;
-      }
-
-      const sendKey = `${adminId}:${agendaDay.dateKey}`;
-      if (this.sentKeys.has(sendKey)) {
-        continue;
-      }
-
-      const admin =
-        adminAppointments[0].admin ||
-        ({
-          _id: new Types.ObjectId(adminId),
-        } as User);
-
-      if (
-        admin.role &&
-        admin.role !== ERole.ADMIN &&
-        admin.role !== ERole.SUPER_ADMIN
-      ) {
-        continue;
-      }
-      if (
-        admin.status === EUserStatus.DELETED ||
-        admin.status === EUserStatus.DISABLED
-      ) {
-        continue;
-      }
-      if (!admin.email || admin.emailAppointmentReminders === false) {
-        continue;
-      }
-
-      const sorted = [...adminAppointments].sort(
-        (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
-      );
-
-      const fullname =
-        [admin.firstName, admin.lastName].filter(Boolean).join(' ') ||
-        admin.email;
-
-      const rows = sorted.map((appointment) => ({
-        timeRange: this.formatTimeRange(
-          appointment.start,
-          appointment.end,
-          timeZone,
-        ),
+    const practitioner = appointment.admin;
+    const ok = await this.mailingService.sendAppointmentInvitation(
+      attendee.email,
+      {
+        fullname: this.displayName(attendee) || attendee.email,
         title: appointment.title || 'Appointment',
-        attendeeName: this.attendeeName(appointment),
+        startFormatted: this.formatStart(appointment.start, timeZone),
+        otherPartyName: this.displayName(practitioner),
+        practitionerName: this.displayName(practitioner),
         consultationTypeLabel: this.consultationLabel(
           appointment.consultationType,
         ),
-      }));
+        reminder: true,
+      },
+    );
 
-      const sent = await this.mailingService.sendAppointmentDailyReminder(
-        admin.email,
-        {
-          fullname,
-          dateFormatted,
-          officeOpenTime,
-          officeName,
-          calendarUrl,
-          appointments: rows,
-        },
+    if (ok) {
+      this.logger.log(
+        `Tomorrow reminder sent to ${attendee.email} for appointment ${appointment._id}`,
       );
-
-      if (sent) {
-        this.sentKeys.add(sendKey);
-        this.logger.log(
-          `Daily reminder sent to ${admin.email} (${rows.length} appointment(s), office ${office._id}, tz ${timeZone})`,
-        );
-      }
     }
+    return ok;
   }
 
-  private attendeeName(appointment: PopulatedAppointment): string {
-    const user = appointment.user;
+  private displayName(user?: User | null): string {
     if (!user) {
-      return '—';
+      return '';
     }
     return (
       [user.firstName, user.lastName].filter(Boolean).join(' ') ||
       user.email ||
-      '—'
+      ''
     );
   }
 
@@ -268,57 +183,19 @@ export class AppointmentReminderService {
       case EConsultationType.HOME_VISIT:
         return 'Home visit';
       default:
-        return '—';
+        return '';
     }
   }
 
-  private formatTimeRange(start: Date, end: Date, timeZone: string): string {
-    const opts: Intl.DateTimeFormatOptions = {
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23',
-      timeZone,
-    };
-    try {
-      const startLabel = new Intl.DateTimeFormat('en-GB', opts).format(
-        new Date(start),
-      );
-      const endLabel = new Intl.DateTimeFormat('en-GB', opts).format(
-        new Date(end),
-      );
-      return `${startLabel} – ${endLabel}`;
-    } catch {
-      return `${new Date(start).toISOString()} – ${new Date(end).toISOString()}`;
-    }
-  }
-
-  private formatDateLabel(date: Date, timeZone: string): string {
+  private formatStart(date: Date, timeZone: string): string {
     try {
       return new Intl.DateTimeFormat('en-GB', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
+        dateStyle: 'full',
+        timeStyle: 'short',
         timeZone,
-      }).format(date);
+      }).format(new Date(date));
     } catch {
-      return date.toISOString().slice(0, 10);
-    }
-  }
-
-  /** Drop send-keys older than ~2 days (multi-timezone safe). */
-  private pruneSentKeys(): void {
-    const cutoff = Date.now() - 2 * 24 * 60 * 60 * 1000;
-    for (const key of this.sentKeys) {
-      const dateKey = key.slice(key.lastIndexOf(':') + 1);
-      const [year, month, day] = dateKey.split('-').map(Number);
-      if (!year || !month || !day) {
-        this.sentKeys.delete(key);
-        continue;
-      }
-      if (Date.UTC(year, month - 1, day) < cutoff) {
-        this.sentKeys.delete(key);
-      }
+      return new Date(date).toISOString();
     }
   }
 }

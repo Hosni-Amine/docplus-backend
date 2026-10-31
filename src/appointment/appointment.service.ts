@@ -226,18 +226,32 @@ export class AppointmentService {
         updates.consultationType = consultationType;
       }
 
+      const rescheduled =
+        (updates.start instanceof Date &&
+          updates.start.getTime() !== new Date(existing.start).getTime()) ||
+        (updates.end instanceof Date &&
+          updates.end.getTime() !== new Date(existing.end).getTime());
+      const adminChanged =
+        updates.adminId instanceof Types.ObjectId &&
+        updates.adminId.toString() !== existing.adminId?.toString();
+      const consultationTypeChanged =
+        consultationType !== undefined &&
+        consultationType !== existing.consultationType;
+
+      // New time → allow the upcoming (~1h) reminder to fire again.
+      if (rescheduled) {
+        updates.reminderSentAt = null;
+      }
+
       const appointment = await this.appointmentRepository.findOneAndUpdate(
         { _id: id },
         updates,
       );
 
-      if (appointment) {
-        const rescheduled =
-          (updates.start instanceof Date &&
-            updates.start.getTime() !== new Date(existing.start).getTime()) ||
-          (updates.end instanceof Date &&
-            updates.end.getTime() !== new Date(existing.end).getTime());
-
+      if (
+        appointment &&
+        (rescheduled || adminChanged || consultationTypeChanged)
+      ) {
         const [attendee, practitioner] = await Promise.all([
           this.userRepository.findOne({ _id: appointment.userId }),
           this.userRepository.findOne({ _id: appointment.adminId }),
@@ -249,6 +263,7 @@ export class AppointmentService {
             attendee,
             practitioner,
             rescheduled,
+            !rescheduled && (adminChanged || consultationTypeChanged),
           );
         }
       }
@@ -300,13 +315,14 @@ export class AppointmentService {
   }
 
   /**
-   * Send appointment confirmation/reschedule emails to both the attendee and the practitioner.
+   * Send confirmation / reschedule / details-updated emails to attendee and practitioner.
    */
   private async notifyParticipants(
     appointment: Appointment,
     attendee: User,
     practitioner: User,
     rescheduled: boolean,
+    detailsUpdated = false,
   ): Promise<void> {
     try {
       const startFormatted = this.formatAppointmentDate(appointment.start);
@@ -409,6 +425,7 @@ export class AppointmentService {
           phone,
           joinUrl: attendeeJoinUrl,
           rescheduled,
+          updated: detailsUpdated,
         });
       }
 
@@ -431,6 +448,7 @@ export class AppointmentService {
             phone,
             joinUrl: adminJoinUrl,
             rescheduled,
+            updated: detailsUpdated,
           },
         );
       }
