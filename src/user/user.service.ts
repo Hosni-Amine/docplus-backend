@@ -1,13 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Types } from 'mongoose';
 import {
+  EOfficeStaffRole,
   EOfficeStatus,
   ERole,
   EUserStatus,
+  EMedicalSpecialty,
   deleteUploadedFile,
 } from '../common';
 import { OfficeRepository } from '../office/office.repository';
 import { GetUsersInput, GetUsersPaginator } from './dto/get-users-input';
+import { PublicDoctorFilterInput } from './dto/public-doctor-filter.input';
 import { CreateUserInput } from './dto/create-user.input';
 import { ChangeOwnershipInput } from './dto/change-ownership.input';
 import { UpdateUserInput } from './dto/update.user.input';
@@ -16,7 +19,12 @@ import { UserRepository } from './user.repository';
 import { IBaseRes } from '../common/responses.dto';
 import { GetAllUsersRes, GetUserRes } from './user.controller';
 import { User } from './entities/user.entity';
-import { listUserFields, privateUserFields } from './user.fields';
+import {
+  listUserFields,
+  privateUserFields,
+  publicDoctorFields,
+  publicOfficeFields,
+} from './user.fields';
 
 type Actor = {
   id?: string;
@@ -55,6 +63,9 @@ export class UserService {
       const { officeId, role, ...rest } = createUserInput;
       if (role !== ERole.ADMIN && role !== ERole.SUPER_ADMIN) {
         return this.result(403, 'FORBIDDEN');
+      }
+      if (!createUserInput.email) {
+        return this.result(400, 'EMAIL_REQUIRED');
       }
       if (role === ERole.ADMIN) {
         if (!officeId) {
@@ -116,6 +127,9 @@ export class UserService {
       }
       if (role === ERole.ADMIN && !actor.isOwner) {
         return this.result(403, 'FORBIDDEN');
+      }
+      if (role === ERole.ADMIN && !createUserInput.email) {
+        return this.result(400, 'EMAIL_REQUIRED');
       }
       const officeId = actor.officeId?.toString();
 
@@ -388,11 +402,11 @@ export class UserService {
   }
 
   /**
-   * Return every admin user matching the filter.
+   * Return super admin users.
    */
-  async getAllAdmins(): Promise<GetAllUsersRes> {
+  async getAllSuperAdmins(): Promise<GetAllUsersRes> {
     try {
-      const query = { role: { $in: [ERole.ADMIN, ERole.SUPER_ADMIN] } };
+      const query = { role: ERole.SUPER_ADMIN };
 
       const users = await this.userRepository.find(query, listUserFields);
       return {
@@ -451,6 +465,140 @@ export class UserService {
       ...(exceptId && { _id: { $ne: exceptId } }),
     });
     return !!existing;
+  }
+
+  /**
+   * Search public active doctors for landing page with filtering.
+   * Office address and location are checked from office, not user.
+   * Returns clean list of doctors without pagination, strictly excluding doctor home address.
+   */
+  async findPublicDoctors(
+    filter: PublicDoctorFilterInput,
+  ): Promise<{ status: number; message: string; doctors: any[] }> {
+    try {
+      const { name, specialty, address } = filter;
+      const query: Record<string, unknown> = {
+        role: ERole.ADMIN,
+        officeStaffRole: EOfficeStaffRole.DOCTOR,
+        status: EUserStatus.ACTIVE,
+        isPublic: true,
+      };
+
+      if (specialty) {
+        query.specialty = specialty;
+      }
+
+      if (name && name.trim()) {
+        const trimmedName = name.trim();
+        const tokens = trimmedName.split(/\s+/).filter(Boolean);
+        const nameRegex = { $regex: trimmedName, $options: 'i' };
+
+        if (tokens.length > 1) {
+          query.$or = [
+            { firstName: nameRegex },
+            { lastName: nameRegex },
+            {
+              $and: [
+                { firstName: { $regex: tokens[0], $options: 'i' } },
+                {
+                  lastName: {
+                    $regex: tokens.slice(1).join(' '),
+                    $options: 'i',
+                  },
+                },
+              ],
+            },
+            {
+              $and: [
+                { lastName: { $regex: tokens[0], $options: 'i' } },
+                {
+                  firstName: {
+                    $regex: tokens.slice(1).join(' '),
+                    $options: 'i',
+                  },
+                },
+              ],
+            },
+          ];
+        } else {
+          query.$or = [{ firstName: nameRegex }, { lastName: nameRegex }];
+        }
+      }
+
+      // Check address ONLY from active office
+      if (address && address.trim()) {
+        const addrRegex = { $regex: address.trim(), $options: 'i' };
+        const matchingOffices = await this.officeRepository.find({
+          status: EOfficeStatus.ACTIVE,
+          $or: [
+            { address: addrRegex },
+            { city: addrRegex },
+            { state: addrRegex },
+            { country: addrRegex },
+            { zipCode: addrRegex },
+            { legalName: addrRegex },
+          ],
+        });
+
+        const matchingOfficeIds = matchingOffices.map((off) => off._id);
+
+        if (matchingOfficeIds.length === 0) {
+          return { status: 200, message: 'SUCCESS', doctors: [] };
+        }
+
+        query.officeId = { $in: matchingOfficeIds };
+      }
+
+      const doctors = await this.userRepository.findWithOfficePopulate(query, {
+        sort: { lastName: 1, firstName: 1 },
+        userSelect: publicDoctorFields,
+        officeSelect: publicOfficeFields,
+      });
+
+      return {
+        status: 200,
+        message: 'SUCCESS',
+        doctors,
+      };
+    } catch (error) {
+      this.logger.error('Error finding public doctors:', error);
+      return { status: 500, message: 'INTERNAL_SERVER_ERROR', doctors: [] };
+    }
+  }
+
+  /**
+   * Return available specialties from active public doctors along with all enum values.
+   */
+  async getPublicDoctorSpecialties(): Promise<{
+    status: number;
+    message: string;
+    availableSpecialties: string[];
+    allSpecialties: string[];
+  }> {
+    try {
+      const activeSpecialties =
+        await this.userRepository.getDistinctSpecialties({
+          role: ERole.ADMIN,
+          officeStaffRole: EOfficeStaffRole.DOCTOR,
+          status: EUserStatus.ACTIVE,
+          isPublic: true,
+        });
+
+      return {
+        status: 200,
+        message: 'SPECIALTIES_FETCHED_SUCCESSFULLY',
+        availableSpecialties: activeSpecialties,
+        allSpecialties: Object.values(EMedicalSpecialty),
+      };
+    } catch (error) {
+      this.logger.error('Error fetching doctor specialties:', error);
+      return {
+        status: 500,
+        message: 'INTERNAL_SERVER_ERROR',
+        availableSpecialties: [],
+        allSpecialties: Object.values(EMedicalSpecialty),
+      };
+    }
   }
 
   /**

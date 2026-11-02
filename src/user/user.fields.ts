@@ -21,6 +21,19 @@ export const populateUserFields =
   'email firstName lastName avatarUrl phone role officeStaffRole status emailAppointmentReminders emailAppointmentConfirmations';
 
 /**
+ * Public clinician profile for landing page & search.
+ * Strictly excludes doctor's private home address and internal notes.
+ */
+export const publicDoctorFields =
+  'firstName lastName email avatarUrl specialty about languages verified experienceYears officeId';
+
+/**
+ * Public office fields populated on public clinician query.
+ */
+export const publicOfficeFields =
+  'legalName address city state country zipCode lat lng phone email timezone';
+
+/**
  * Full profile: /me, get-by-id, account settings, doctor public card fields.
  */
 export const privateUserFields =

@@ -17,6 +17,7 @@ import { GetUsersInput } from './dto/get-users-input';
 import { CreateUserInput } from './dto/create-user.input';
 import { ChangeOwnershipInput } from './dto/change-ownership.input';
 import { UpdateUserInput } from './dto/update.user.input';
+import { PublicDoctorFilterInput } from './dto/public-doctor-filter.input';
 import { IBaseRes } from '../common/responses.dto';
 import { ECareRecipientLabel, ERole } from '../common/enums';
 import { Roles } from '../decorators/roles.decorator';
@@ -41,6 +42,26 @@ export interface GetAllUsersRes extends IBaseRes {
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  /**
+   * Public endpoint for landing page to filter doctors.
+   * Filters by name (first/last), specialty enum, and office address.
+   * Returns a clean list of doctors without pagination, strictly excluding personal home address.
+   */
+  @Get('public/doctors')
+  async getPublicDoctors(
+    @Query() filter: PublicDoctorFilterInput,
+  ): Promise<{ status: number; message: string; doctors: any[] }> {
+    return await this.userService.findPublicDoctors(filter);
+  }
+
+  /**
+   * Public endpoint to get available specialties and all specialty enums.
+   */
+  @Get('public/specialties')
+  async getPublicDoctorSpecialties() {
+    return await this.userService.getPublicDoctorSpecialties();
+  }
 
   @UseGuards(AuthGuard)
   @Get('me')
@@ -111,9 +132,9 @@ export class UserController {
 
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(ERole.SUPER_ADMIN)
-  @Get('admins')
-  async getAllAdmins(): Promise<GetAllUsersRes> {
-    return await this.userService.getAllAdmins();
+  @Get('super-admins')
+  async getAllSuperAdmins(): Promise<GetAllUsersRes> {
+    return await this.userService.getAllSuperAdmins();
   }
 
   /** Office users, filtered by role. */
