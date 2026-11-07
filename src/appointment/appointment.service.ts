@@ -58,6 +58,37 @@ export class AppointmentService {
         return { status: 400, message: dateError, appointment: null };
       }
 
+      const startDate = new Date(input.start);
+      const endDate = new Date(input.end);
+
+      // Check practitioner (admin) availability
+      const hasAdminConflict = await this.hasPractitionerConflict(
+        input.adminId,
+        startDate,
+        endDate,
+      );
+      if (hasAdminConflict) {
+        return {
+          status: 400,
+          message: 'PRACTITIONER_NOT_AVAILABLE',
+          appointment: null,
+        };
+      }
+
+      // Check attendee (user/client/patient) availability
+      const hasUserConflict = await this.hasUserConflict(
+        input.userId,
+        startDate,
+        endDate,
+      );
+      if (hasUserConflict) {
+        return {
+          status: 400,
+          message: 'USER_NOT_AVAILABLE',
+          appointment: null,
+        };
+      }
+
       const appointment = await this.appointmentRepository.create({
         title: input.title,
         description: input.description,
@@ -198,6 +229,45 @@ export class AppointmentService {
       const dateError = this.getDateError(start, end);
       if (dateError) {
         return { status: 400, message: dateError, appointment: null };
+      }
+
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+
+      // Check practitioner (admin) availability
+      const targetAdminId = input.adminId ?? existing.adminId?.toString();
+      if (targetAdminId) {
+        const hasAdminConflict = await this.hasPractitionerConflict(
+          targetAdminId,
+          startDate,
+          endDate,
+          input.id,
+        );
+        if (hasAdminConflict) {
+          return {
+            status: 400,
+            message: 'PRACTITIONER_NOT_AVAILABLE',
+            appointment: null,
+          };
+        }
+      }
+
+      // Check attendee (user/client/patient) availability
+      const targetUserId = input.userId ?? existing.userId?.toString();
+      if (targetUserId) {
+        const hasUserConflict = await this.hasUserConflict(
+          targetUserId,
+          startDate,
+          endDate,
+          input.id,
+        );
+        if (hasUserConflict) {
+          return {
+            status: 400,
+            message: 'USER_NOT_AVAILABLE',
+            appointment: null,
+          };
+        }
       }
 
       const {
@@ -485,6 +555,42 @@ export class AppointmentService {
       return 'END_BEFORE_START';
     }
     return null;
+  }
+
+  private async hasPractitionerConflict(
+    adminId: string,
+    start: Date,
+    end: Date,
+    exceptAppointmentId?: string,
+  ): Promise<boolean> {
+    const existingAppointments = await this.appointmentRepository.find({
+      adminId: new Types.ObjectId(adminId),
+      isDeleted: false,
+      start: { $lt: end },
+      end: { $gt: start },
+      ...(exceptAppointmentId
+        ? { _id: { $ne: new Types.ObjectId(exceptAppointmentId) } }
+        : {}),
+    });
+    return existingAppointments.length > 0;
+  }
+
+  private async hasUserConflict(
+    userId: string,
+    start: Date,
+    end: Date,
+    exceptAppointmentId?: string,
+  ): Promise<boolean> {
+    const existingAppointments = await this.appointmentRepository.find({
+      userId: new Types.ObjectId(userId),
+      isDeleted: false,
+      start: { $lt: end },
+      end: { $gt: start },
+      ...(exceptAppointmentId
+        ? { _id: { $ne: new Types.ObjectId(exceptAppointmentId) } }
+        : {}),
+    });
+    return existingAppointments.length > 0;
   }
 
   private canAccess(actor: Actor, officeId: string): boolean {
