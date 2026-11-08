@@ -491,37 +491,25 @@ export class UserService {
       if (name && name.trim()) {
         const trimmedName = name.trim();
         const tokens = trimmedName.split(/\s+/).filter(Boolean);
-        const nameRegex = { $regex: trimmedName, $options: 'i' };
 
-        if (tokens.length > 1) {
-          query.$or = [
-            { firstName: nameRegex },
-            { lastName: nameRegex },
-            {
-              $and: [
-                { firstName: { $regex: tokens[0], $options: 'i' } },
-                {
-                  lastName: {
-                    $regex: tokens.slice(1).join(' '),
-                    $options: 'i',
-                  },
-                },
-              ],
-            },
-            {
-              $and: [
-                { lastName: { $regex: tokens[0], $options: 'i' } },
-                {
-                  firstName: {
-                    $regex: tokens.slice(1).join(' '),
-                    $options: 'i',
-                  },
-                },
-              ],
-            },
-          ];
-        } else {
-          query.$or = [{ firstName: nameRegex }, { lastName: nameRegex }];
+        const escapeRegex = (val: string) =>
+          val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        const tokenFilters = tokens.map((token) => {
+          const tokenRegex = { $regex: escapeRegex(token), $options: 'i' };
+          return {
+            $or: [
+              { firstName: tokenRegex },
+              { lastName: tokenRegex },
+              { midNames: tokenRegex },
+            ],
+          };
+        });
+
+        if (tokenFilters.length === 1) {
+          query.$or = tokenFilters[0].$or;
+        } else if (tokenFilters.length > 1) {
+          query.$and = tokenFilters;
         }
       }
 
