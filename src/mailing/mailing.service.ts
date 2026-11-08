@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import * as fs from 'node:fs/promises';
+import { join } from 'path';
 import Handlebars from 'handlebars';
 import { buildFrontendUrl } from '../common';
 
@@ -18,10 +19,83 @@ export enum MailTemplate {
 export class MailingService {
   private readonly transporter: nodemailer.Transporter;
   private readonly logger = new Logger(MailingService.name);
+  private customHandlebars: typeof Handlebars;
+
+  private readonly defaultHeader = `
+<tr>
+  <td align="left" style="padding:32px 32px 20px;">
+    <a href="{{platformUrl}}" target="_blank" style="text-decoration:none;display:inline-block;">
+      <img src="{{logoUrl}}" alt="{{brandName}}" width="140" style="display:block;width:140px;max-width:140px;height:auto;border:0;outline:none;text-decoration:none;" />
+    </a>
+  </td>
+</tr>
+  `.trim();
+
+  private readonly defaultFooter = `
+<tr>
+  <td style="padding:0 32px 32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e6ebf1;padding-top:24px;">
+      <tr>
+        <td align="center" style="font-size:12px;line-height:1.6;color:#5c6b7a;text-align:center;">
+          <p style="margin:0;font-size:13px;font-weight:600;color:#122033;">{{brandName}} &mdash; Medical SaaS Platform</p>
+          <p style="margin:6px 0 0;font-size:12px;color:#5c6b7a;">
+            Healthcare management, consultations, and patient care.
+          </p>
+          <p style="margin:10px 0 0;font-size:12px;">
+            <a href="{{platformUrl}}" target="_blank" style="color:#0F6E56;text-decoration:none;font-weight:600;">Visit {{brandName}}</a>
+            <span style="color:#cbd5e1;margin:0 6px;">&bull;</span>
+            <a href="mailto:{{supportEmail}}" style="color:#0F6E56;text-decoration:none;font-weight:600;">Help &amp; Support</a>
+          </p>
+          <p style="margin:14px 0 0;font-size:11px;line-height:1.5;color:#8592a3;">
+            This is an automated notification. Please do not reply directly to this email.<br>
+            &copy; {{currentYear}} {{brandName}}. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+  `.trim();
 
   constructor(private readonly configService: ConfigService) {
     this.transporter = this.createTransporter();
     this.customHandlebars = customHandlebars;
+    this.initPartials();
+  }
+
+  private initPartials(): void {
+    this.customHandlebars.registerPartial('emailHeader', this.defaultHeader);
+    this.customHandlebars.registerPartial('emailFooter', this.defaultFooter);
+
+    // Try reading disk partials if present
+    const headerPath = join(
+      process.cwd(),
+      'templates',
+      'partials',
+      'email-header.hbs',
+    );
+    const footerPath = join(
+      process.cwd(),
+      'templates',
+      'partials',
+      'email-footer.hbs',
+    );
+
+    fs.readFile(headerPath, 'utf-8')
+      .then((content) => {
+        this.customHandlebars.registerPartial('emailHeader', content);
+      })
+      .catch(() => {
+        // Fallback to inline defaultHeader
+      });
+
+    fs.readFile(footerPath, 'utf-8')
+      .then((content) => {
+        this.customHandlebars.registerPartial('emailFooter', content);
+      })
+      .catch(() => {
+        // Fallback to inline defaultFooter
+      });
   }
 
   private createTransporter(): nodemailer.Transporter {
@@ -46,8 +120,6 @@ export class MailingService {
     });
   }
 
-  private customHandlebars: typeof Handlebars;
-
   async sendMail({
     templatePath,
     context,
@@ -58,18 +130,39 @@ export class MailingService {
   }): Promise<void> {
     let html: string | undefined;
 
-    const template = await fs.readFile('templates/' + templatePath, 'utf-8');
+    const brandName =
+      this.configService.get<string>('MAIL_DEFAULT_NAME') || 'Cliniqo';
+    const frontendUrl = buildFrontendUrl(
+      this.configService.get<string>('FRONTEND_URL'),
+      '',
+    );
+    const logoUrl = buildFrontendUrl(
+      this.configService.get<string>('FRONTEND_URL'),
+      '/logo/logo-full-transparent.png',
+    );
+    const supportEmail =
+      this.configService.get<string>('MAIL_SUPPORT_EMAIL') ||
+      this.configService.get<string>('MAIL_DEFAULT_EMAIL') ||
+      'support@cliniqo.com';
+    const currentYear = new Date().getFullYear();
+
+    const mergedContext: Record<string, unknown> = {
+      brandName,
+      platformUrl: frontendUrl || 'https://cliniqo.com',
+      logoUrl,
+      supportEmail,
+      currentYear,
+      ...context,
+    };
+
+    if (templatePath) {
+      const template = await fs.readFile('templates/' + templatePath, 'utf-8');
+      html = this.customHandlebars.compile(template, {
+        strict: true,
+      })(mergedContext, { allowProtoPropertiesByDefault: true });
+    }
+
     try {
-      if (templatePath) {
-        html = this.customHandlebars.compile(template, {
-          strict: true,
-        })(
-          {
-            ...context,
-          },
-          { allowProtoPropertiesByDefault: true },
-        );
-      }
       const recipients = Array.isArray(mailOptions.to)
         ? mailOptions.to
             .map((recipient) =>
@@ -92,9 +185,7 @@ export class MailingService {
           ...mailOptions,
           from: mailOptions.from
             ? mailOptions.from
-            : `"${this.configService.get('MAIL_DEFAULT_NAME', {
-                infer: true,
-              })}" <${this.configService.get('MAIL_DEFAULT_EMAIL', {
+            : `"${brandName}" <${this.configService.get('MAIL_DEFAULT_EMAIL', {
                 infer: true,
               })}>`,
           html: mailOptions.text ? mailOptions.text : html,
@@ -114,6 +205,8 @@ export class MailingService {
   }
 
   async sendWelcomeEmail(email: string, fullname: string): Promise<boolean> {
+    const brandName =
+      this.configService.get<string>('MAIL_DEFAULT_NAME') || 'Cliniqo';
     try {
       await this.sendMail({
         templatePath: MailTemplate.WelcomeEmail,
@@ -125,7 +218,7 @@ export class MailingService {
           ),
         },
         to: email,
-        subject: 'Bienvenue sur DocPlus',
+        subject: `Bienvenue sur ${brandName}`,
       });
       return true;
     } catch (error) {
@@ -140,6 +233,8 @@ export class MailingService {
     otpCode: string,
     expirationMinutes: number,
   ): Promise<boolean> {
+    const brandName =
+      this.configService.get<string>('MAIL_DEFAULT_NAME') || 'Cliniqo';
     try {
       await this.sendMail({
         templatePath: MailTemplate.OtpCodeEmail,
@@ -149,7 +244,7 @@ export class MailingService {
           expirationMinutes,
         },
         to: email,
-        subject: 'Code de vérification - DocPlus',
+        subject: `Code de vérification - ${brandName}`,
       });
       return true;
     } catch (error) {
