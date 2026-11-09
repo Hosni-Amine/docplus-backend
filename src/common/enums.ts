@@ -88,6 +88,13 @@ export enum EUserStatus {
   DELETED = 'deleted',
 }
 
+export enum EDemoRequestStatus {
+  PENDING_APPROVAL = 'pending_approval',
+  ACCEPTED = 'accepted',
+  WAITING_PAIMENT = 'waiting_payment',
+  DECLINED = 'declined',
+}
+
 export enum EOfficeStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',

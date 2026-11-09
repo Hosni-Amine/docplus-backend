@@ -13,6 +13,7 @@ export enum MailTemplate {
   RequestCreated = 'request-created.hbs',
   RequestCompleted = 'request-completed.hbs',
   AppointmentInvitation = 'appointment-invitation.hbs',
+  DemoRequestConfirmation = 'demo-request-confirmation.hbs',
 }
 
 @Injectable()
@@ -249,6 +250,33 @@ export class MailingService {
       return true;
     } catch (error) {
       this.logger.error('Failed to send OTP code email:', error);
+      return false;
+    }
+  }
+
+  async sendDemoRequestConfirmation(
+    email: string,
+    fullname: string,
+    legalName?: string,
+  ): Promise<boolean> {
+    const brandName =
+      this.configService.get<string>('MAIL_DEFAULT_NAME') || 'Cliniqo';
+    try {
+      await this.sendMail({
+        templatePath: MailTemplate.DemoRequestConfirmation,
+        context: {
+          fullname,
+          legalName,
+        },
+        to: email,
+        subject: `Confirmation de votre demande de démonstration — ${brandName}`,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(
+        'Failed to send demo request confirmation email:',
+        error,
+      );
       return false;
     }
   }

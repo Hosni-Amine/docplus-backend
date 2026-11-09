@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demande de démonstration reçue — {{brandName}}</title>
+</head>
+
+<body style="margin:0;padding:0;background-color:#eef2f6;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+    Votre demande de démonstration {{brandName}} a bien été reçue. Notre équipe vous contactera dans les 48 heures.
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+    style="background-color:#eef2f6;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+          style="max-width:520px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+          {{> emailHeader}}
+          <tr>
+            <td
+              style="padding:0 32px 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <h1 style="margin:0;font-size:22px;line-height:1.3;font-weight:700;color:#122033;">Demande de
+                démonstration reçue</h1>
+            </td>
+          </tr>
+          <tr>
+            <td
+              style="padding:12px 32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#243140;">
+              {{#if fullname}}
+              <p style="margin:0 0 12px;">Bonjour <strong>{{fullname}}</strong>,</p>
+              {{else}}
+              <p style="margin:0 0 12px;">Bonjour,</p>
+              {{/if}}
+              <p style="margin:0 0 16px;">
+                Nous vous confirmons la bonne réception de votre demande de démonstration pour
+                <strong>{{brandName}}</strong>{{#if legalName}} ({{legalName}}){{/if}}.
+              </p>
+              <div
+                style="background-color:#F4F5F7;border-left:4px solid #0F6E56;border-radius:8px;padding:16px 20px;margin:20px 0;">
+                <p style="margin:0;font-size:14px;color:#122033;font-weight:600;">
+                  Notre équipe examinera votre demande et vous contactera dans les 48 heures.
+                </p>
+                <p style="margin:6px 0 0;font-size:13px;color:#5c6b7a;">
+                  Nous préparerons une démonstration sur mesure adaptée à votre activité.
+                </p>
+              </div>
+              <p style="margin:16px 0 0;font-size:14px;color:#5c6b7a;">
+                Si vous avez des questions urgentes entre-temps, n'hésitez pas à nous écrire directement en répondant à
+                cet e-mail.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px 0;"></td>
+          </tr>
+          {{> emailFooter}}
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+
+</html>

@@ -16,6 +16,7 @@ import { DatabaseModule } from './common/database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { MailingModule } from './mailing/mailing.module';
 import { UploadModule } from './upload/upload.module';
+import { DemoRequestModule } from './demo-request/demo-request.module';
 import { GuardsModule } from './guards/guards.module';
 import { JwtSignOptions } from '@nestjs/jwt';
 
@@ -33,6 +34,7 @@ import { JwtSignOptions } from '@nestjs/jwt';
     ChatModule,
     MailingModule,
     UploadModule,
+    DemoRequestModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: './.env',
