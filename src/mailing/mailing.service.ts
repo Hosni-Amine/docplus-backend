@@ -214,7 +214,7 @@ export class MailingService {
           fullname,
           url: buildFrontendUrl(
             this.configService.get<string>('FRONTEND_URL'),
-            '/auth/jwt/sign-in',
+            '/auth/sign-in',
           ),
         },
         to: email,
