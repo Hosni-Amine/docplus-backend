@@ -16,6 +16,7 @@ import { ERole, EMeetingStatus } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { CreateAppointmentInput } from './dto/create-appointment.input';
 import { CreatePublicAppointmentRequestInput } from './dto/create-public-appointment-request.input';
+import { MarkAppointmentRequestsReadInput } from './dto/mark-appointment-requests-read.input';
 import { AppointmentRequestService } from './appointment-request.service';
 import { UpdateAppointmentInput } from './dto/update-appointment.input';
 import {
@@ -125,6 +126,23 @@ export class AppointmentController {
     @CurrentUser() user: Actor,
   ): Promise<GetAppointmentsRes> {
     return this.appointmentService.getAppointments(user);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN)
+  @Get('requests')
+  async listAppointmentRequests(@CurrentUser() user: Actor) {
+    return this.appointmentRequestService.listPendingForOffice(user);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN)
+  @Patch('requests/read')
+  async markAppointmentRequestsRead(
+    @Body() input: MarkAppointmentRequestsReadInput,
+    @CurrentUser() user: Actor,
+  ): Promise<IBaseRes> {
+    return this.appointmentRequestService.markPendingSeen(user, input ?? {});
   }
 
   @UseGuards(AuthGuard, RolesGuard)

@@ -146,4 +146,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!userIds.length) return;
     this.server.to(userIds.map((id) => `user:${id}`)).emit(event, payload);
   }
+
+  /** Office admins join `office:<id>` when the dashboard socket connects. */
+  emitToOffice(officeId: string, event: string, payload: unknown = {}) {
+    if (!officeId) return;
+    this.server.to(`office:${officeId}`).emit(event, payload);
+  }
 }

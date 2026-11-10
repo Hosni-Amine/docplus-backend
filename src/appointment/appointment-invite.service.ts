@@ -8,6 +8,7 @@ import {
   EUserStatus,
   EConsultationType,
   buildFrontendUrl,
+  doctorDisplayName,
 } from '../common';
 import { MailingService } from '../mailing/mailing.service';
 import { UserRepository } from '../user/user.repository';
@@ -308,10 +309,11 @@ export class AppointmentInviteService {
           _id: appointment.adminId,
         });
         if (practitioner) {
-          practitionerName =
-            [practitioner.firstName, practitioner.lastName]
-              .filter(Boolean)
-              .join(' ') || practitioner.email;
+          practitionerName = doctorDisplayName(
+            practitioner.firstName,
+            practitioner.lastName,
+            practitioner.email,
+          );
         }
       }
 

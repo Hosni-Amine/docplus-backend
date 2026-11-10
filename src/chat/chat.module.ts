@@ -29,5 +29,6 @@ import { MessageRepository } from './message.repository';
     ConversationRepository,
     MessageRepository,
   ],
+  exports: [ChatGateway],
 })
 export class ChatModule {}

@@ -7,10 +7,12 @@ import {
   EOfficeStatus,
   ERole,
   EUserStatus,
+  doctorDisplayName,
 } from '../common';
 import { buildFrontendUrl } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import type { Office } from '../office/entities/office.entity';
+import { ChatGateway } from '../chat/chat.gateway';
 import { MailingService } from '../mailing/mailing.service';
 import { UserRepository } from '../user/user.repository';
 import { OfficeRepository } from '../office/office.repository';
@@ -18,6 +20,25 @@ import { AppointmentRepository } from './appointment.repository';
 import { AppointmentRequestRepository } from './appointment-request.repository';
 import { CreatePublicAppointmentRequestInput } from './dto/create-public-appointment-request.input';
 import { EAppointmentRequestStatus } from './entities/appointment-request.entity';
+import { MarkAppointmentRequestsReadInput } from './dto/mark-appointment-requests-read.input';
+
+type OfficeActor = {
+  id?: string;
+  officeId?: { toString(): string } | string;
+};
+
+export type PendingAppointmentRequestItem = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  start: Date;
+  consultationType: EConsultationType;
+  doctorName: string;
+  seen: boolean;
+  createdAt?: Date;
+};
 
 export interface CreatePublicAppointmentRequestRes extends IBaseRes {
   available: boolean;
@@ -36,6 +57,7 @@ export class AppointmentRequestService {
     private readonly officeRepository: OfficeRepository,
     private readonly mailingService: MailingService,
     private readonly configService: ConfigService,
+    private readonly chatGateway: ChatGateway,
   ) {}
 
   private consultationTypeLabel(type: EConsultationType): string {
@@ -193,19 +215,18 @@ export class AppointmentRequestService {
       const email = input.email.trim().toLowerCase();
       const phone = input.phone.trim();
 
-      const pendingWithDoctor = await this.requestRepository.findOne({
+      const pendingMatches = await this.requestRepository.findPendingForContact(
         adminId,
         email,
-        status: EAppointmentRequestStatus.PENDING,
-      });
-      if (pendingWithDoctor) {
-        const sameSlot =
-          new Date(pendingWithDoctor.start).getTime() === startDate.getTime();
+        phone,
+      );
+      const sameSlot = pendingMatches.some(
+        (row) => new Date(row.start).getTime() === startDate.getTime(),
+      );
+      if (sameSlot) {
         return {
           status: 200,
-          message: sameSlot
-            ? 'APPOINTMENT_REQUEST_ALREADY_SUBMITTED'
-            : 'APPOINTMENT_REQUEST_PENDING_WITH_DOCTOR',
+          message: 'APPOINTMENT_REQUEST_ALREADY_SUBMITTED',
           available: true,
         };
       }
@@ -220,6 +241,14 @@ export class AppointmentRequestService {
           message: 'APPOINTMENT_REQUEST_RATE_LIMITED',
           available: true,
         };
+      }
+
+      if (pendingMatches.length > 0) {
+        await this.requestRepository.deletePendingForContact(
+          adminId,
+          email,
+          phone,
+        );
       }
 
       const consultationType = input.consultationType;
@@ -239,9 +268,12 @@ export class AppointmentRequestService {
         status: EAppointmentRequestStatus.PENDING,
       });
 
-      const doctorName =
-        [doctor.firstName, doctor.lastName].filter(Boolean).join(' ') ||
-        'Doctor';
+      this.chatGateway.emitToOffice(
+        office._id.toString(),
+        'appointment-request:new',
+      );
+
+      const doctorName = doctorDisplayName(doctor.firstName, doctor.lastName);
       const patientName = `${input.firstName.trim()} ${input.lastName.trim()}`;
       const startFormatted = this.formatAppointmentDate(startDate);
       const reference = request._id.toString();
@@ -318,6 +350,102 @@ export class AppointmentRequestService {
         message: 'INTERNAL_SERVER_ERROR',
         available: false,
       };
+    }
+  }
+
+  private actorOfficeId(actor: OfficeActor): Types.ObjectId | null {
+    if (!actor.officeId || !actor.id) return null;
+    const value = actor.officeId.toString();
+    if (!Types.ObjectId.isValid(value) || !Types.ObjectId.isValid(actor.id)) {
+      return null;
+    }
+    return new Types.ObjectId(value);
+  }
+
+  async listPendingForOffice(actor: OfficeActor): Promise<{
+    status: number;
+    message: string;
+    requests: PendingAppointmentRequestItem[];
+  }> {
+    try {
+      const officeId = this.actorOfficeId(actor);
+      if (!officeId || !actor.id) {
+        return { status: 403, message: 'OFFICE_REQUIRED', requests: [] };
+      }
+
+      const rows = await this.requestRepository.listPendingForOffice(officeId);
+      const doctorIds = [
+        ...new Set(rows.map((row) => row.adminId?.toString()).filter(Boolean)),
+      ];
+      const doctors = doctorIds.length
+        ? await this.userRepository.find(
+            { _id: { $in: doctorIds } },
+            'firstName lastName',
+          )
+        : [];
+      const doctorNames = new Map(
+        doctors.map((doctor) => [
+          doctor._id.toString(),
+          doctorDisplayName(doctor.firstName, doctor.lastName),
+        ]),
+      );
+
+      return {
+        status: 200,
+        message: 'APPOINTMENT_REQUESTS_FOUND',
+        requests: rows.map((row) => ({
+          id: row._id.toString(),
+          firstName: row.firstName,
+          lastName: row.lastName,
+          email: row.email,
+          phone: row.phone,
+          start: row.start,
+          consultationType: row.consultationType,
+          doctorName: doctorNames.get(row.adminId.toString()) || 'Doctor',
+          seen: (row.seenBy ?? []).some((id) => id.toString() === actor.id),
+          createdAt: (row as { created_at?: Date }).created_at,
+        })),
+      };
+    } catch (error) {
+      this.logger.error(
+        'Failed to list appointment requests',
+        error instanceof Error ? error.stack : String(error),
+      );
+      return {
+        status: 500,
+        message: 'INTERNAL_SERVER_ERROR',
+        requests: [],
+      };
+    }
+  }
+
+  async markPendingSeen(
+    actor: OfficeActor,
+    input: MarkAppointmentRequestsReadInput,
+  ): Promise<IBaseRes> {
+    try {
+      const officeId = this.actorOfficeId(actor);
+      if (!officeId || !actor.id) {
+        return { status: 403, message: 'OFFICE_REQUIRED' };
+      }
+
+      const ids = (input.ids ?? [])
+        .filter((id) => Types.ObjectId.isValid(id))
+        .map((id) => new Types.ObjectId(id));
+
+      await this.requestRepository.markSeen(
+        officeId,
+        new Types.ObjectId(actor.id),
+        input.ids ? ids : undefined,
+      );
+
+      return { status: 200, message: 'APPOINTMENT_REQUESTS_MARKED_READ' };
+    } catch (error) {
+      this.logger.error(
+        'Failed to mark appointment requests read',
+        error instanceof Error ? error.stack : String(error),
+      );
+      return { status: 500, message: 'INTERNAL_SERVER_ERROR' };
     }
   }
 }

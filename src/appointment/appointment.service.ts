@@ -7,6 +7,7 @@ import {
   EOfficeStaffRole,
   ERole,
   EUserStatus,
+  doctorDisplayName,
 } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { MailingService } from '../mailing/mailing.service';
@@ -426,10 +427,11 @@ export class AppointmentService {
   ): Promise<void> {
     try {
       const startFormatted = this.formatAppointmentDate(appointment.start);
-      const practitionerName =
-        [practitioner.firstName, practitioner.lastName]
-          .filter(Boolean)
-          .join(' ') || practitioner.email;
+      const practitionerName = doctorDisplayName(
+        practitioner.firstName,
+        practitioner.lastName,
+        practitioner.email,
+      );
       const attendeeName =
         [attendee.firstName, attendee.lastName].filter(Boolean).join(' ') ||
         attendee.email;

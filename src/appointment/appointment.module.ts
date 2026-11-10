@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { DatabaseModule } from '../common/database/database.module';
 import { UserModule } from '../user/user.module';
 import { OfficeModule } from '../office/office.module';
+import { ChatModule } from '../chat/chat.module';
 import { AppointmentController } from './appointment.controller';
 import { AppointmentRepository } from './appointment.repository';
 import { AppointmentService } from './appointment.service';
@@ -22,6 +23,7 @@ import {
     DatabaseModule,
     UserModule,
     OfficeModule,
+    ChatModule,
     MongooseModule.forFeature([
       { name: Appointment.name, schema: AppointmentSchema },
       { name: AppointmentRequest.name, schema: AppointmentRequestSchema },

@@ -8,6 +8,7 @@ import {
   resolveTimeZone,
   wallTimeToUtc,
   zonedDayRange,
+  doctorDisplayName,
 } from '../common';
 import { MailingService } from '../mailing/mailing.service';
 import { OfficeRepository } from '../office/office.repository';
@@ -138,14 +139,19 @@ export class AppointmentReminderService {
     }
 
     const practitioner = appointment.admin;
+    const practitionerName = doctorDisplayName(
+      practitioner?.firstName,
+      practitioner?.lastName,
+      this.displayName(practitioner),
+    );
     const ok = await this.mailingService.sendAppointmentInvitation(
       attendee.email,
       {
         fullname: this.displayName(attendee) || attendee.email,
         title: appointment.title || 'Appointment',
         startFormatted: this.formatStart(appointment.start, timeZone),
-        otherPartyName: this.displayName(practitioner),
-        practitionerName: this.displayName(practitioner),
+        otherPartyName: practitionerName,
+        practitionerName,
         consultationTypeLabel: this.consultationLabel(
           appointment.consultationType,
         ),

@@ -50,15 +50,27 @@ export class AppointmentRequest extends AbstractDocument {
     default: EAppointmentRequestStatus.PENDING,
   })
   status: EAppointmentRequestStatus;
+
+  /** Office admins who opened this request in the notification bell. */
+  @Prop({ type: [SchemaTypes.ObjectId], ref: 'User', default: [] })
+  seenBy?: Types.ObjectId[];
 }
 
 export const AppointmentRequestSchema =
   SchemaFactory.createForClass(AppointmentRequest);
 AppointmentRequestSchema.index({ adminId: 1, status: 1, start: 1 });
 AppointmentRequestSchema.index({ email: 1, created_at: -1 });
-/** One pending request per patient (email) and doctor. */
+/** One pending request per patient email and doctor. */
 AppointmentRequestSchema.index(
   { adminId: 1, email: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: EAppointmentRequestStatus.PENDING },
+  },
+);
+/** One pending request per patient phone and doctor. */
+AppointmentRequestSchema.index(
+  { adminId: 1, phone: 1 },
   {
     unique: true,
     partialFilterExpression: { status: EAppointmentRequestStatus.PENDING },
