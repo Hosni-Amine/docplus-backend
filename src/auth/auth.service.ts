@@ -146,7 +146,7 @@ export class AuthService {
 
   /**
    * Check the one-time code and return a JWT.
-   * The code 000000 skips the OTP check.
+   * In development only, 000000 skips the OTP check.
    */
   async verifyOtp(body: VerifyOtpReqInput, ip: string): Promise<VerifyOtpRes> {
     const emailKey = body.email.trim().toLowerCase();
@@ -272,9 +272,12 @@ export class AuthService {
   }
 
   /**
-   * Allow the code 000000 in every environment.
+   * Dev-only shortcut. Production and any other NODE_ENV must use the emailed code.
    */
   private isBypassCode(otpCode: string): boolean {
+    if (this.configService.get('NODE_ENV') !== 'development') {
+      return false;
+    }
     return otpCode === '000000';
   }
 

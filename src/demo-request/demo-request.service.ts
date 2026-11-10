@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 import { createHash, timingSafeEqual } from 'crypto';
 import { EDemoRequestStatus, OtpService } from '../common';
@@ -28,13 +29,18 @@ export class DemoRequestService {
     private readonly demoRequestRepository: DemoRequestRepository,
     private readonly otpService: OtpService,
     private readonly mailingService: MailingService,
+    private readonly configService: ConfigService,
   ) {}
 
   private hashOtp(otpCode: string): string {
     return createHash('sha256').update(otpCode).digest('hex');
   }
 
+  /** Dev-only shortcut. Production and any other NODE_ENV must use the emailed code. */
   private isBypassCode(otpCode: string): boolean {
+    if (this.configService.get('NODE_ENV') !== 'development') {
+      return false;
+    }
     return otpCode === '000000';
   }
 

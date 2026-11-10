@@ -10,8 +10,6 @@ const customHandlebars = Handlebars.create();
 export enum MailTemplate {
   WelcomeEmail = 'welcome-email.hbs',
   OtpCodeEmail = 'otp-code-email.hbs',
-  RequestCreated = 'request-created.hbs',
-  RequestCompleted = 'request-completed.hbs',
   AppointmentInvitation = 'appointment-invitation.hbs',
   AppointmentRequestDoctor = 'appointment-request-doctor.hbs',
   AppointmentRequestPatient = 'appointment-request-patient.hbs',
@@ -282,78 +280,6 @@ export class MailingService {
     } catch (error) {
       this.logger.error(
         'Failed to send demo request confirmation email:',
-        error,
-      );
-      return false;
-    }
-  }
-
-  async sendRequestCreatedNotification(
-    email: string,
-    validatorName: string,
-    requestData: {
-      reference: string;
-      title: string;
-      demandeurName: string;
-      requestTypeName: string;
-      createdAt: string;
-      requestUrl: string;
-    },
-  ): Promise<boolean> {
-    try {
-      await this.sendMail({
-        templatePath: MailTemplate.RequestCreated,
-        context: {
-          validatorName,
-          reference: requestData.reference,
-          title: requestData.title,
-          demandeurName: requestData.demandeurName,
-          requestTypeName: requestData.requestTypeName,
-          createdAt: requestData.createdAt,
-          requestUrl: requestData.requestUrl,
-        },
-        to: email,
-        subject: `Nouvelle demande - ${requestData.reference}`,
-      });
-      return true;
-    } catch (error) {
-      this.logger.error('Failed to send request created notification:', error);
-      return false;
-    }
-  }
-
-  async sendRequestCompletedNotification(
-    email: string,
-    fullname: string,
-    requestData: {
-      reference: string;
-      title: string;
-      requestTypeName: string;
-      completedAt: string;
-      requestUrl: string;
-    },
-  ): Promise<boolean> {
-    try {
-      await this.sendMail({
-        templatePath: MailTemplate.RequestCompleted,
-        context: {
-          fullname,
-          reference: requestData.reference,
-          title: requestData.title,
-          requestTypeName: requestData.requestTypeName,
-          completedAt: requestData.completedAt,
-          requestUrl: requestData.requestUrl,
-        },
-        to: email,
-        subject: `Votre demande est terminée - ${requestData.reference}`,
-      });
-      this.logger.log(
-        'Request completed notification email sent successfully to: ' + email,
-      );
-      return true;
-    } catch (error) {
-      this.logger.error(
-        'Failed to send request completed notification email:',
         error,
       );
       return false;
