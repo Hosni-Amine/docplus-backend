@@ -26,12 +26,34 @@
               {{else}}
                 <p style="margin:0 0 12px;">Hello,</p>
               {{/if}}
-              <p style="margin:0 0 16px;">Your account is ready. You can now sign in to start using {{brandName}} to manage your appointments, patients, and clinical workflows.</p>
+              <p style="margin:0 0 16px;">
+                Your account is ready. Sign in to start using {{brandName}} to manage appointments, patients, and clinical workflows.
+              </p>
             </td>
           </tr>
           <tr>
-            <td align="center" style="padding:16px 32px 28px;">
-              <a href="{{url}}" style="display:inline-block;padding:13px 32px;background-color:#0F6E56;color:#ffffff;text-decoration:none;border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;box-shadow:0 2px 6px rgba(15,110,86,0.25);">Sign in to {{brandName}}</a>
+            <td style="padding:8px 32px 16px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+                <tr>
+                  <td style="padding:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;color:#243140;">
+                    <p style="margin:0;font-weight:700;font-size:16px;color:#122033;">{{title}}</p>
+                    <p style="margin:8px 0 0;font-weight:600;color:#0F6E56;">{{summaryLine}}</p>
+                    <p style="margin:4px 0 0;color:#64748b;">Platform: <strong style="color:#1e293b;">{{brandName}}</strong></p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          {{#if url}}
+          <tr>
+            <td align="center" style="padding:12px 32px 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <a href="{{url}}" style="display:inline-block;padding:13px 32px;border-radius:8px;background-color:#0F6E56;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;box-shadow:0 2px 6px rgba(15,110,86,0.25);">Sign in to {{brandName}}</a>
+            </td>
+          </tr>
+          {{/if}}
+          <tr>
+            <td style="padding:0 32px 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#718096;">
+              <p style="margin:0;">If you did not expect this email, contact support through {{brandName}} or ignore this message.</p>
             </td>
           </tr>
           {{> emailFooter}}

@@ -1,7 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Types } from 'mongoose';
-import { buildFrontendUrl, EConsultationType, ERole } from '../common';
+import {
+  buildFrontendUrl,
+  EConsultationType,
+  EOfficeStaffRole,
+  ERole,
+  EUserStatus,
+} from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { MailingService } from '../mailing/mailing.service';
 import { User } from '../user/entities/user.entity';
@@ -60,6 +66,18 @@ export class AppointmentService {
 
       const startDate = new Date(input.start);
       const endDate = new Date(input.end);
+
+      const practitionerError = await this.validatePractitionerDoctor(
+        input.adminId,
+        officeId,
+      );
+      if (practitionerError) {
+        return {
+          status: 400,
+          message: practitionerError,
+          appointment: null,
+        };
+      }
 
       // Check practitioner (admin) availability
       const hasAdminConflict = await this.hasPractitionerConflict(
@@ -237,6 +255,18 @@ export class AppointmentService {
       // Check practitioner (admin) availability
       const targetAdminId = input.adminId ?? existing.adminId?.toString();
       if (targetAdminId) {
+        const practitionerError = await this.validatePractitionerDoctor(
+          targetAdminId,
+          existing.officeId.toString(),
+        );
+        if (practitionerError) {
+          return {
+            status: 400,
+            message: practitionerError,
+            appointment: null,
+          };
+        }
+
         const hasAdminConflict = await this.hasPractitionerConflict(
           targetAdminId,
           startDate,
@@ -553,6 +583,24 @@ export class AppointmentService {
     }
     if (endDate < startDate) {
       return 'END_BEFORE_START';
+    }
+    return null;
+  }
+
+  /** Appointments must be assigned to an active doctor in the same office. */
+  private async validatePractitionerDoctor(
+    adminId: string,
+    officeId: string,
+  ): Promise<string | null> {
+    const practitioner = await this.userRepository.findOne({
+      _id: adminId,
+      role: ERole.ADMIN,
+      officeId: new Types.ObjectId(officeId),
+      officeStaffRole: EOfficeStaffRole.DOCTOR,
+      status: EUserStatus.ACTIVE,
+    });
+    if (!practitioner) {
+      return 'PRACTITIONER_MUST_BE_DOCTOR';
     }
     return null;
   }

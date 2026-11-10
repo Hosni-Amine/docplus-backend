@@ -4,7 +4,8 @@ import { UserRepository } from '../user/user.repository';
 import { Injectable, Logger } from '@nestjs/common';
 import { MailingService } from '../mailing/mailing.service';
 import { ConfigService } from '@nestjs/config';
-import { EUserStatus, IBaseRes, OtpService } from '../common';
+import { EOfficeStatus, EUserStatus, IBaseRes, OtpService } from '../common';
+import { OfficeRepository } from '../office/office.repository';
 import {
   RequestOtpReqInput,
   RequestOtpRes,
@@ -33,11 +34,21 @@ export class AuthService {
 
   constructor(
     private readonly userRepository: UserRepository,
+    private readonly officeRepository: OfficeRepository,
     private readonly jwtService: JwtService,
     private readonly mailingService: MailingService,
     private readonly configService: ConfigService,
     private readonly otpService: OtpService,
   ) {}
+
+  /** Users tied to an office require that office to be active (login / OTP). */
+  private async hasActiveOffice(user: User): Promise<boolean> {
+    if (!user.officeId) {
+      return true;
+    }
+    const office = await this.officeRepository.findOne({ _id: user.officeId });
+    return !!office && office.status === EOfficeStatus.ACTIVE;
+  }
 
   /**
    * Send a one-time code to the user's email.
@@ -72,7 +83,11 @@ export class AuthService {
         { session },
       );
 
-      if (!current_user || current_user.status !== EUserStatus.ACTIVE) {
+      if (
+        !current_user ||
+        current_user.status !== EUserStatus.ACTIVE ||
+        !(await this.hasActiveOffice(current_user))
+      ) {
         await session.abortTransaction();
         return this.genericOtpResponse();
       }
@@ -156,7 +171,11 @@ export class AuthService {
       });
       const invalid = this.invalidOtpResponse();
 
-      if (!current_user || current_user.status !== EUserStatus.ACTIVE) {
+      if (
+        !current_user ||
+        current_user.status !== EUserStatus.ACTIVE ||
+        !(await this.hasActiveOffice(current_user))
+      ) {
         return invalid;
       }
 

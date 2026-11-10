@@ -8,7 +8,12 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { Reflector } from '@nestjs/core';
-import { ECareRecipientLabel, ERole, EUserStatus } from '../common';
+import {
+  ECareRecipientLabel,
+  EOfficeStatus,
+  ERole,
+  EUserStatus,
+} from '../common';
 import { OfficeRepository } from '../office/office.repository';
 import { UserRepository } from '../user/user.repository';
 import { tokenUserFields } from '../user/user.fields';
@@ -88,13 +93,15 @@ export class AuthGuard implements CanActivate {
       if (user.officeId) {
         const office = await this.officeRepository.findOne(
           { _id: user.officeId },
-          { select: 'legalName careRecipientLabel' },
+          { select: 'legalName careRecipientLabel status' },
         );
-        if (office) {
-          legalName = office.legalName;
-          careRecipientLabel =
-            office.careRecipientLabel ?? ECareRecipientLabel.PATIENT;
+        if (!office || office.status !== EOfficeStatus.ACTIVE) {
+          this.logger.error('Office is missing or inactive');
+          return false;
         }
+        legalName = office.legalName;
+        careRecipientLabel =
+          office.careRecipientLabel ?? ECareRecipientLabel.PATIENT;
       }
 
       request.user = {

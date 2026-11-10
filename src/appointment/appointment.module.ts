@@ -10,6 +10,12 @@ import { VideoConsultationService } from './video-consultation.service';
 import { AppointmentInviteService } from './appointment-invite.service';
 import { AppointmentReminderService } from './appointment-reminder.service';
 import { Appointment, AppointmentSchema } from './entities/appointment.entity';
+import { AppointmentRequestService } from './appointment-request.service';
+import { AppointmentRequestRepository } from './appointment-request.repository';
+import {
+  AppointmentRequest,
+  AppointmentRequestSchema,
+} from './entities/appointment-request.entity';
 
 @Module({
   imports: [
@@ -18,6 +24,7 @@ import { Appointment, AppointmentSchema } from './entities/appointment.entity';
     OfficeModule,
     MongooseModule.forFeature([
       { name: Appointment.name, schema: AppointmentSchema },
+      { name: AppointmentRequest.name, schema: AppointmentRequestSchema },
     ]),
   ],
   controllers: [AppointmentController],
@@ -27,6 +34,8 @@ import { Appointment, AppointmentSchema } from './entities/appointment.entity';
     VideoConsultationService,
     AppointmentInviteService,
     AppointmentReminderService,
+    AppointmentRequestRepository,
+    AppointmentRequestService,
   ],
   exports: [
     AppointmentRepository,

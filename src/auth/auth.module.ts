@@ -7,11 +7,13 @@ import { UserRepository } from '../user/user.repository';
 import { MailingService } from '../mailing/mailing.service';
 import { DatabaseModule } from '../common/database/database.module';
 import { CommonModule } from '../common';
+import { OfficeModule } from '../office/office.module';
 
 @Module({
   imports: [
     DatabaseModule,
     CommonModule,
+    OfficeModule,
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   controllers: [AuthController],

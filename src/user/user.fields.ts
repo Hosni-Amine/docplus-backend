@@ -22,16 +22,16 @@ export const populateUserFields =
 
 /**
  * Public clinician profile for landing page & search.
- * Strictly excludes doctor's private home address and internal notes.
+ * Excludes email, bio, languages, experience, home address, and internal notes.
  */
 export const publicDoctorFields =
-  'firstName lastName midNames email avatarUrl specialty about languages verified experienceYears officeId';
+  'firstName lastName midNames avatarUrl specialty verified officeId';
 
 /**
  * Public office fields populated on public clinician query.
  */
 export const publicOfficeFields =
-  'legalName address city state country zipCode lat lng phone email timezone';
+  'legalName service address city state country zipCode lat lng phone email timezone';
 
 /**
  * Full profile: /me, get-by-id, account settings, doctor public card fields.

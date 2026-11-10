@@ -15,6 +15,8 @@ import { Roles } from '../decorators/roles.decorator';
 import { ERole, EMeetingStatus } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { CreateAppointmentInput } from './dto/create-appointment.input';
+import { CreatePublicAppointmentRequestInput } from './dto/create-public-appointment-request.input';
+import { AppointmentRequestService } from './appointment-request.service';
 import { UpdateAppointmentInput } from './dto/update-appointment.input';
 import {
   GetAppointmentRes,
@@ -40,6 +42,7 @@ type Actor = {
 export class AppointmentController {
   constructor(
     private readonly appointmentService: AppointmentService,
+    private readonly appointmentRequestService: AppointmentRequestService,
     private readonly videoConsultationService: VideoConsultationService,
     private readonly appointmentInviteService: AppointmentInviteService,
   ) {}
@@ -95,6 +98,14 @@ export class AppointmentController {
       status,
       user,
     );
+  }
+
+  /** Public endpoint: checks the requested hour and creates a pending request if available. */
+  @Post('request')
+  async createPublicAppointmentRequest(
+    @Body() input: CreatePublicAppointmentRequestInput,
+  ) {
+    return this.appointmentRequestService.createRequest(input);
   }
 
   @UseGuards(AuthGuard, RolesGuard)

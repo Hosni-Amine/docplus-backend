@@ -13,6 +13,8 @@ export enum MailTemplate {
   RequestCreated = 'request-created.hbs',
   RequestCompleted = 'request-completed.hbs',
   AppointmentInvitation = 'appointment-invitation.hbs',
+  AppointmentRequestDoctor = 'appointment-request-doctor.hbs',
+  AppointmentRequestPatient = 'appointment-request-patient.hbs',
   DemoRequestConfirmation = 'demo-request-confirmation.hbs',
 }
 
@@ -213,6 +215,8 @@ export class MailingService {
         templatePath: MailTemplate.WelcomeEmail,
         context: {
           fullname,
+          title: `Welcome to ${brandName}`,
+          summaryLine: 'Your account is ready',
           url: buildFrontendUrl(
             this.configService.get<string>('FRONTEND_URL'),
             '/auth/sign-in',
@@ -241,6 +245,7 @@ export class MailingService {
         templatePath: MailTemplate.OtpCodeEmail,
         context: {
           fullname,
+          title: 'Your sign-in code',
           otpCode,
           expirationMinutes,
         },
@@ -266,7 +271,9 @@ export class MailingService {
         templatePath: MailTemplate.DemoRequestConfirmation,
         context: {
           fullname,
-          legalName,
+          legalName: legalName ?? '',
+          title: 'Demande de démonstration',
+          summaryLine: 'Réponse sous 48 heures',
         },
         to: email,
         subject: `Confirmation de votre demande de démonstration — ${brandName}`,
@@ -360,6 +367,107 @@ export class MailingService {
    * Every context key is passed even when empty: templates are compiled in
    * strict mode, which throws on a missing property.
    */
+  async sendPublicAppointmentRequestDoctorNotification(
+    email: string,
+    data: {
+      fullname: string;
+      title: string;
+      patientName: string;
+      attendeeName: string;
+      otherPartyName: string;
+      patientEmail: string;
+      patientPhone: string;
+      startFormatted: string;
+      reference: string;
+      consultationTypeLabel?: string;
+      locationPhrase?: string;
+      address?: string;
+      phone?: string;
+      calendarUrl?: string;
+    },
+  ): Promise<boolean> {
+    const brandName =
+      this.configService.get<string>('MAIL_DEFAULT_NAME') || 'Cliniqo';
+    try {
+      await this.sendMail({
+        templatePath: MailTemplate.AppointmentRequestDoctor,
+        context: {
+          fullname: data.fullname,
+          title: data.title,
+          patientName: data.patientName,
+          attendeeName: data.attendeeName,
+          otherPartyName: data.otherPartyName,
+          patientEmail: data.patientEmail,
+          patientPhone: data.patientPhone,
+          startFormatted: data.startFormatted,
+          reference: data.reference,
+          consultationTypeLabel: data.consultationTypeLabel ?? '',
+          locationPhrase: data.locationPhrase ?? '',
+          address: data.address ?? '',
+          phone: data.phone ?? '',
+          calendarUrl: data.calendarUrl ?? '',
+        },
+        to: email,
+        subject: `New appointment request — ${brandName}`,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(
+        'Failed to send public appointment request doctor notification:',
+        error,
+      );
+      return false;
+    }
+  }
+
+  async sendPublicAppointmentRequestPatientConfirmation(
+    email: string,
+    data: {
+      fullname: string;
+      title: string;
+      practitionerName: string;
+      otherPartyName: string;
+      startFormatted: string;
+      reference: string;
+      consultationTypeLabel?: string;
+      locationPhrase?: string;
+      address?: string;
+      phone?: string;
+    },
+  ): Promise<boolean> {
+    const brandName =
+      this.configService.get<string>('MAIL_DEFAULT_NAME') || 'Cliniqo';
+    try {
+      const subject = data.practitionerName
+        ? `Appointment request received — ${data.practitionerName}`
+        : `Appointment request received — ${brandName}`;
+      await this.sendMail({
+        templatePath: MailTemplate.AppointmentRequestPatient,
+        context: {
+          fullname: data.fullname,
+          title: data.title,
+          practitionerName: data.practitionerName,
+          otherPartyName: data.otherPartyName,
+          startFormatted: data.startFormatted,
+          reference: data.reference,
+          consultationTypeLabel: data.consultationTypeLabel ?? '',
+          locationPhrase: data.locationPhrase ?? '',
+          address: data.address ?? '',
+          phone: data.phone ?? '',
+        },
+        to: email,
+        subject,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(
+        'Failed to send public appointment request patient confirmation:',
+        error,
+      );
+      return false;
+    }
+  }
+
   async sendAppointmentInvitation(
     email: string,
     appointmentData: {

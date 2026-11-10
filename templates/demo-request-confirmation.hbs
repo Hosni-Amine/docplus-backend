@@ -1,59 +1,61 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Demande de démonstration reçue — {{brandName}}</title>
 </head>
-
 <body style="margin:0;padding:0;background-color:#eef2f6;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
     Votre demande de démonstration {{brandName}} a bien été reçue. Notre équipe vous contactera dans les 48 heures.
   </div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-    style="background-color:#eef2f6;padding:32px 16px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eef2f6;padding:32px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-          style="max-width:520px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.05);">
           {{> emailHeader}}
           <tr>
-            <td
-              style="padding:0 32px 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-              <h1 style="margin:0;font-size:22px;line-height:1.3;font-weight:700;color:#122033;">Demande de
-                démonstration reçue</h1>
+            <td style="padding:0 32px 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <h1 style="margin:0;font-size:22px;line-height:1.3;font-weight:700;color:#122033;">Demande de démonstration reçue</h1>
             </td>
           </tr>
           <tr>
-            <td
-              style="padding:12px 32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#243140;">
+            <td style="padding:12px 32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#243140;">
               {{#if fullname}}
-              <p style="margin:0 0 12px;">Bonjour <strong>{{fullname}}</strong>,</p>
+                <p style="margin:0 0 12px;">Bonjour <strong>{{fullname}}</strong>,</p>
               {{else}}
-              <p style="margin:0 0 12px;">Bonjour,</p>
+                <p style="margin:0 0 12px;">Bonjour,</p>
               {{/if}}
               <p style="margin:0 0 16px;">
-                Nous vous confirmons la bonne réception de votre demande de démonstration pour
-                <strong>{{brandName}}</strong>{{#if legalName}} ({{legalName}}){{/if}}.
-              </p>
-              <div
-                style="background-color:#F4F5F7;border-left:4px solid #0F6E56;border-radius:8px;padding:16px 20px;margin:20px 0;">
-                <p style="margin:0;font-size:14px;color:#122033;font-weight:600;">
-                  Notre équipe examinera votre demande et vous contactera dans les 48 heures.
-                </p>
-                <p style="margin:6px 0 0;font-size:13px;color:#5c6b7a;">
-                  Nous préparerons une démonstration sur mesure adaptée à votre activité.
-                </p>
-              </div>
-              <p style="margin:16px 0 0;font-size:14px;color:#5c6b7a;">
-                Si vous avez des questions urgentes entre-temps, n'hésitez pas à nous écrire directement en répondant à
-                cet e-mail.
+                Nous vous confirmons la bonne réception de votre demande de démonstration pour <strong>{{brandName}}</strong>{{#if legalName}} — <strong>{{legalName}}</strong>{{/if}}.
               </p>
             </td>
           </tr>
           <tr>
-            <td style="padding:24px 32px 0;"></td>
+            <td style="padding:8px 32px 16px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+                <tr>
+                  <td style="padding:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;color:#243140;">
+                    <p style="margin:0;font-weight:700;font-size:16px;color:#122033;">{{title}}</p>
+                    <p style="margin:8px 0 0;font-weight:600;color:#0F6E56;">{{summaryLine}}</p>
+                    {{#if legalName}}<p style="margin:4px 0 0;color:#64748b;">Établissement : <strong style="color:#1e293b;">{{legalName}}</strong></p>{{/if}}
+                    <p style="margin:4px 0 0;color:#64748b;">Plateforme : <strong style="color:#1e293b;">{{brandName}}</strong></p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          {{#if platformUrl}}
+          <tr>
+            <td align="center" style="padding:12px 32px 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <a href="{{platformUrl}}" style="display:inline-block;padding:13px 32px;border-radius:8px;background-color:#0F6E56;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;box-shadow:0 2px 6px rgba(15,110,86,0.25);">Découvrir {{brandName}}</a>
+            </td>
+          </tr>
+          {{/if}}
+          <tr>
+            <td style="padding:0 32px 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#718096;">
+              <p style="margin:0;">Notre équipe examinera votre demande et vous contactera dans les 48 heures. En cas de question urgente, répondez à cet e-mail ou contactez le support via {{brandName}}.</p>
+            </td>
           </tr>
           {{> emailFooter}}
         </table>
@@ -61,5 +63,4 @@
     </tr>
   </table>
 </body>
-
 </html>

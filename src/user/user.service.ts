@@ -249,6 +249,17 @@ export class UserService {
         delete updates.isPublic;
       }
 
+      const effectiveStaffRole =
+        updates.officeStaffRole !== undefined
+          ? updates.officeStaffRole
+          : existingUser.officeStaffRole;
+      if (effectiveStaffRole !== EOfficeStaffRole.DOCTOR) {
+        delete updates.isPublic;
+        if (existingUser.isPublic) {
+          updates.isPublic = false;
+        }
+      }
+
       // Verified badge: super admin only.
       const canSetVerified = isSuperAdmin || !!actor?.isOwner;
       if ('verified' in updates && !canSetVerified) {
@@ -513,6 +524,15 @@ export class UserService {
         }
       }
 
+      const activeOffices = await this.officeRepository.find(
+        { status: EOfficeStatus.ACTIVE },
+        { select: '_id' },
+      );
+      const activeOfficeIds = activeOffices.map((off) => off._id);
+      if (activeOfficeIds.length === 0) {
+        return { status: 200, message: 'SUCCESS', doctors: [] };
+      }
+
       // Check address ONLY from active office
       if (address && address.trim()) {
         const addrRegex = { $regex: address.trim(), $options: 'i' };
@@ -535,6 +555,8 @@ export class UserService {
         }
 
         query.officeId = { $in: matchingOfficeIds };
+      } else {
+        query.officeId = { $in: activeOfficeIds };
       }
 
       const doctors = await this.userRepository.findWithOfficePopulate(query, {
@@ -564,13 +586,22 @@ export class UserService {
     allSpecialties: string[];
   }> {
     try {
+      const activeOffices = await this.officeRepository.find(
+        { status: EOfficeStatus.ACTIVE },
+        { select: '_id' },
+      );
+      const activeOfficeIds = activeOffices.map((off) => off._id);
+
       const activeSpecialties =
-        await this.userRepository.getDistinctSpecialties({
-          role: ERole.ADMIN,
-          officeStaffRole: EOfficeStaffRole.DOCTOR,
-          status: EUserStatus.ACTIVE,
-          isPublic: true,
-        });
+        activeOfficeIds.length === 0
+          ? []
+          : await this.userRepository.getDistinctSpecialties({
+              role: ERole.ADMIN,
+              officeStaffRole: EOfficeStaffRole.DOCTOR,
+              status: EUserStatus.ACTIVE,
+              isPublic: true,
+              officeId: { $in: activeOfficeIds },
+            });
 
       return {
         status: 200,
