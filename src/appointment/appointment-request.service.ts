@@ -35,7 +35,8 @@ export type PendingAppointmentRequestItem = {
   phone?: string;
   start: Date;
   consultationType: EConsultationType;
-  doctorName: string;
+  adminId: string;
+  status: EAppointmentRequestStatus;
   seen: boolean;
   createdAt?: Date;
 };
@@ -374,34 +375,20 @@ export class AppointmentRequestService {
       }
 
       const rows = await this.requestRepository.listPendingForOffice(officeId);
-      const doctorIds = [
-        ...new Set(rows.map((row) => row.adminId?.toString()).filter(Boolean)),
-      ];
-      const doctors = doctorIds.length
-        ? await this.userRepository.find(
-            { _id: { $in: doctorIds } },
-            'firstName lastName',
-          )
-        : [];
-      const doctorNames = new Map(
-        doctors.map((doctor) => [
-          doctor._id.toString(),
-          doctorDisplayName(doctor.firstName, doctor.lastName),
-        ]),
-      );
 
       return {
         status: 200,
         message: 'APPOINTMENT_REQUESTS_FOUND',
         requests: rows.map((row) => ({
           id: row._id.toString(),
+          adminId: row.adminId.toString(),
           firstName: row.firstName,
           lastName: row.lastName,
           email: row.email,
           phone: row.phone,
           start: row.start,
           consultationType: row.consultationType,
-          doctorName: doctorNames.get(row.adminId.toString()) || 'Doctor',
+          status: row.status,
           seen: (row.seenBy ?? []).some((id) => id.toString() === actor.id),
           createdAt: (row as { created_at?: Date }).created_at,
         })),
@@ -443,6 +430,36 @@ export class AppointmentRequestService {
     } catch (error) {
       this.logger.error(
         'Failed to mark appointment requests read',
+        error instanceof Error ? error.stack : String(error),
+      );
+      return { status: 500, message: 'INTERNAL_SERVER_ERROR' };
+    }
+  }
+
+  async declinePending(actor: OfficeActor, id: string): Promise<IBaseRes> {
+    try {
+      const officeId = this.actorOfficeId(actor);
+      if (!officeId || !actor.id || !Types.ObjectId.isValid(id)) {
+        return { status: 403, message: 'OFFICE_REQUIRED' };
+      }
+
+      const updated = await this.requestRepository.declinePending(
+        officeId,
+        new Types.ObjectId(id),
+      );
+      if (!updated) {
+        return { status: 404, message: 'APPOINTMENT_REQUEST_NOT_FOUND' };
+      }
+
+      this.chatGateway.emitToOffice(
+        officeId.toString(),
+        'appointment-request:updated',
+      );
+
+      return { status: 200, message: 'APPOINTMENT_REQUEST_DECLINED' };
+    } catch (error) {
+      this.logger.error(
+        'Failed to decline appointment request',
         error instanceof Error ? error.stack : String(error),
       );
       return { status: 500, message: 'INTERNAL_SERVER_ERROR' };

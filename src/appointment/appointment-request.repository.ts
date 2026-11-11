@@ -89,4 +89,22 @@ export class AppointmentRequestRepository extends AbstractRepository<Appointment
       .exec()
       .then(() => undefined);
   }
+
+  declinePending(
+    officeId: Types.ObjectId,
+    id: Types.ObjectId,
+  ): Promise<AppointmentRequest | null> {
+    return this.requestModel
+      .findOneAndUpdate(
+        {
+          _id: id,
+          officeId,
+          status: EAppointmentRequestStatus.PENDING,
+        },
+        { status: EAppointmentRequestStatus.DECLINED },
+        { new: true },
+      )
+      .lean()
+      .exec() as Promise<AppointmentRequest | null>;
+  }
 }

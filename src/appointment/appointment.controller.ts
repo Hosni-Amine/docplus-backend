@@ -147,6 +147,16 @@ export class AppointmentController {
 
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(ERole.ADMIN)
+  @Patch('requests/:id/decline')
+  async declineAppointmentRequest(
+    @Param('id') id: string,
+    @CurrentUser() user: Actor,
+  ): Promise<IBaseRes> {
+    return this.appointmentRequestService.declinePending(user, id);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN)
   @Get(':id')
   async getAppointmentById(
     @Param('id') id: string,
