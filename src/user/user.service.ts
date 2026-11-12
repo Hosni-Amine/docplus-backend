@@ -512,7 +512,6 @@ export class UserService {
             $or: [
               { firstName: tokenRegex },
               { lastName: tokenRegex },
-              { midNames: tokenRegex },
             ],
           };
         });

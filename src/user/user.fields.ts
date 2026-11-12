@@ -25,7 +25,7 @@ export const populateUserFields =
  * Excludes email, bio, languages, experience, home address, and internal notes.
  */
 export const publicDoctorFields =
-  'firstName lastName midNames avatarUrl specialty verified officeId';
+  'firstName lastName officeStaffRole avatarUrl specialty verified officeId';
 
 /**
  * Public office fields populated on public clinician query.
