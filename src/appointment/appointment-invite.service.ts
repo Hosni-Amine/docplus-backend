@@ -9,8 +9,10 @@ import {
   EConsultationType,
   buildFrontendUrl,
   doctorDisplayName,
+  formatZonedDateTime,
 } from '../common';
 import { MailingService } from '../mailing/mailing.service';
+import { OfficeRepository } from '../office/office.repository';
 import { UserRepository } from '../user/user.repository';
 import { AppointmentRepository } from './appointment.repository';
 
@@ -56,6 +58,7 @@ export class AppointmentInviteService {
     private readonly configService: ConfigService,
     private readonly appointmentRepository: AppointmentRepository,
     private readonly userRepository: UserRepository,
+    private readonly officeRepository: OfficeRepository,
     private readonly mailingService: MailingService,
   ) {}
 
@@ -317,18 +320,18 @@ export class AppointmentInviteService {
         }
       }
 
-      const timeZone =
+      const office = appointment.officeId
+        ? await this.officeRepository
+            .findOne({ _id: appointment.officeId })
+            .catch(() => null)
+        : null;
+      const fallbackTimezone =
         this.configService.get<string>('APP_TIMEZONE') || 'Europe/Paris';
-      let startFormatted: string;
-      try {
-        startFormatted = new Intl.DateTimeFormat('en-GB', {
-          dateStyle: 'full',
-          timeStyle: 'short',
-          timeZone,
-        }).format(new Date(appointment.start));
-      } catch {
-        startFormatted = new Date(appointment.start).toISOString();
-      }
+      const startFormatted = formatZonedDateTime(
+        appointment.start,
+        office?.timezone,
+        fallbackTimezone,
+      );
 
       await this.mailingService.sendAppointmentInvitation(user.email, {
         fullname:

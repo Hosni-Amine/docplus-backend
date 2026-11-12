@@ -7,6 +7,7 @@ import { ChatModule } from '../chat/chat.module';
 import { AppointmentController } from './appointment.controller';
 import { AppointmentRepository } from './appointment.repository';
 import { AppointmentService } from './appointment.service';
+import { AppointmentAvailabilityService } from './appointment-availability.service';
 import { VideoConsultationService } from './video-consultation.service';
 import { AppointmentInviteService } from './appointment-invite.service';
 import { AppointmentReminderService } from './appointment-reminder.service';
@@ -32,6 +33,7 @@ import {
   controllers: [AppointmentController],
   providers: [
     AppointmentService,
+    AppointmentAvailabilityService,
     AppointmentRepository,
     VideoConsultationService,
     AppointmentInviteService,

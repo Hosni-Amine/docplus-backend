@@ -55,6 +55,34 @@ export function resolveTimeZone(
   return 'Europe/Paris';
 }
 
+/** Format an appointment date with the timezone abbreviation shown explicitly. */
+export function formatZonedDateTime(
+  date: Date | string,
+  candidateTimeZone?: string | null,
+  fallbackTimeZone = 'Europe/Paris',
+  locale = 'en-GB',
+): string {
+  const instant = new Date(date);
+  if (Number.isNaN(instant.getTime())) {
+    return String(date);
+  }
+
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short',
+      timeZone: resolveTimeZone(candidateTimeZone, fallbackTimeZone),
+    }).format(instant);
+  } catch {
+    return instant.toISOString();
+  }
+}
+
 /** Read calendar / clock parts of an instant in a given IANA timezone. */
 export function getZonedParts(
   date: Date,

@@ -5,6 +5,7 @@ import {
   Post,
   Param,
   Patch,
+  Query,
   UseGuards,
   Controller,
 } from '@nestjs/common';
@@ -16,8 +17,10 @@ import { ERole, EMeetingStatus } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { CreateAppointmentInput } from './dto/create-appointment.input';
 import { CreatePublicAppointmentRequestInput } from './dto/create-public-appointment-request.input';
+import { GetAppointmentAvailabilityInput } from './dto/get-appointment-availability.input';
 import { MarkAppointmentRequestsReadInput } from './dto/mark-appointment-requests-read.input';
 import { AppointmentRequestService } from './appointment-request.service';
+import { AppointmentAvailabilityService } from './appointment-availability.service';
 import { UpdateAppointmentInput } from './dto/update-appointment.input';
 import {
   GetAppointmentRes,
@@ -44,6 +47,7 @@ export class AppointmentController {
   constructor(
     private readonly appointmentService: AppointmentService,
     private readonly appointmentRequestService: AppointmentRequestService,
+    private readonly appointmentAvailabilityService: AppointmentAvailabilityService,
     private readonly videoConsultationService: VideoConsultationService,
     private readonly appointmentInviteService: AppointmentInviteService,
   ) {}
@@ -107,6 +111,37 @@ export class AppointmentController {
     @Body() input: CreatePublicAppointmentRequestInput,
   ) {
     return this.appointmentRequestService.createRequest(input);
+  }
+
+  @Get('public/availability')
+  async getPublicAppointmentAvailability(
+    @Query() input: GetAppointmentAvailabilityInput,
+  ) {
+    return this.appointmentAvailabilityService.getMonthAvailability({
+      ...input,
+      publicOnly: true,
+    });
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(ERole.ADMIN)
+  @Get('availability')
+  async getAppointmentAvailability(
+    @Query() input: GetAppointmentAvailabilityInput,
+    @CurrentUser() user: Actor,
+  ) {
+    if (!user.officeId) {
+      return {
+        status: 403,
+        message: 'OFFICE_REQUIRED',
+        slotDurationMinutes: 30,
+        days: [],
+      };
+    }
+    return this.appointmentAvailabilityService.getMonthAvailability({
+      ...input,
+      officeId: user.officeId,
+    });
   }
 
   @UseGuards(AuthGuard, RolesGuard)

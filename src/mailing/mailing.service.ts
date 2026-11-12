@@ -304,12 +304,11 @@ export class MailingService {
       patientEmail: string;
       patientPhone: string;
       startFormatted: string;
-      reference: string;
       consultationTypeLabel?: string;
       locationPhrase?: string;
       address?: string;
       phone?: string;
-      calendarUrl?: string;
+      requestsUrl?: string;
     },
   ): Promise<boolean> {
     const brandName =
@@ -326,12 +325,11 @@ export class MailingService {
           patientEmail: data.patientEmail,
           patientPhone: data.patientPhone,
           startFormatted: data.startFormatted,
-          reference: data.reference,
           consultationTypeLabel: data.consultationTypeLabel ?? '',
           locationPhrase: data.locationPhrase ?? '',
           address: data.address ?? '',
           phone: data.phone ?? '',
-          calendarUrl: data.calendarUrl ?? '',
+          requestsUrl: data.requestsUrl ?? '',
         },
         to: email,
         subject: `New appointment request — ${brandName}`,
@@ -354,7 +352,6 @@ export class MailingService {
       practitionerName: string;
       otherPartyName: string;
       startFormatted: string;
-      reference: string;
       consultationTypeLabel?: string;
       locationPhrase?: string;
       address?: string;
@@ -375,7 +372,6 @@ export class MailingService {
           practitionerName: data.practitionerName,
           otherPartyName: data.otherPartyName,
           startFormatted: data.startFormatted,
-          reference: data.reference,
           consultationTypeLabel: data.consultationTypeLabel ?? '',
           locationPhrase: data.locationPhrase ?? '',
           address: data.address ?? '',

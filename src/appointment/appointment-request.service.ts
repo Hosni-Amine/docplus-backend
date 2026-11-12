@@ -3,20 +3,16 @@ import { ConfigService } from '@nestjs/config';
 import { Types } from 'mongoose';
 import {
   EConsultationType,
-  EOfficeStaffRole,
-  EOfficeStatus,
-  ERole,
-  EUserStatus,
   doctorDisplayName,
+  formatZonedDateTime,
+  resolveTimeZone,
 } from '../common';
 import { buildFrontendUrl } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import type { Office } from '../office/entities/office.entity';
 import { ChatGateway } from '../chat/chat.gateway';
 import { MailingService } from '../mailing/mailing.service';
-import { UserRepository } from '../user/user.repository';
-import { OfficeRepository } from '../office/office.repository';
-import { AppointmentRepository } from './appointment.repository';
+import { AppointmentAvailabilityService } from './appointment-availability.service';
 import { AppointmentRequestRepository } from './appointment-request.repository';
 import { CreatePublicAppointmentRequestInput } from './dto/create-public-appointment-request.input';
 import { EAppointmentRequestStatus } from './entities/appointment-request.entity';
@@ -52,10 +48,8 @@ export class AppointmentRequestService {
   private readonly slotDurationMinutes = 30;
 
   constructor(
-    private readonly appointmentRepository: AppointmentRepository,
+    private readonly appointmentAvailabilityService: AppointmentAvailabilityService,
     private readonly requestRepository: AppointmentRequestRepository,
-    private readonly userRepository: UserRepository,
-    private readonly officeRepository: OfficeRepository,
     private readonly mailingService: MailingService,
     private readonly configService: ConfigService,
     private readonly chatGateway: ChatGateway,
@@ -138,18 +132,14 @@ export class AppointmentRequestService {
     }
   }
 
-  private formatAppointmentDate(date: Date): string {
-    const timeZone =
+  private formatAppointmentDate(date: Date, officeTimezone?: string): string {
+    const fallbackTimezone =
       this.configService.get<string>('APP_TIMEZONE') || 'Europe/Paris';
-    try {
-      return new Intl.DateTimeFormat('en-GB', {
-        dateStyle: 'full',
-        timeStyle: 'short',
-        timeZone,
-      }).format(new Date(date));
-    } catch {
-      return new Date(date).toISOString();
-    }
+    return formatZonedDateTime(
+      date,
+      resolveTimeZone(officeTimezone, fallbackTimezone),
+      fallbackTimezone,
+    );
   }
 
   /** Public, privacy-preserving slot check followed by creation of a pending request. */
@@ -158,60 +148,31 @@ export class AppointmentRequestService {
   ): Promise<CreatePublicAppointmentRequestRes> {
     try {
       const startDate = new Date(input.start);
-      if (isNaN(startDate.getTime())) {
-        return {
-          status: 400,
-          message: 'INVALID_APPOINTMENT_SLOT',
-          available: false,
-        };
-      }
 
       const endDate = new Date(
         startDate.getTime() + this.slotDurationMinutes * 60_000,
       );
 
-      const doctor = await this.userRepository.findOne({
-        _id: input.adminId,
-        role: ERole.ADMIN,
-        officeStaffRole: EOfficeStaffRole.DOCTOR,
-        status: EUserStatus.ACTIVE,
-        isPublic: true,
+      const availability = await this.appointmentAvailabilityService.checkSlot({
+        adminId: input.adminId,
+        start: startDate,
+        end: endDate,
+        publicOnly: true,
       });
-      if (!doctor?.officeId) {
+      if (
+        !availability.available ||
+        !availability.doctor ||
+        !availability.office
+      ) {
         return {
-          status: 404,
-          message: 'PRACTITIONER_NOT_FOUND',
+          status: availability.status,
+          message: availability.message,
           available: false,
         };
       }
 
-      const office = await this.officeRepository.findOne({
-        _id: doctor.officeId,
-        status: EOfficeStatus.ACTIVE,
-      });
-      if (!office) {
-        return {
-          status: 404,
-          message: 'PRACTITIONER_NOT_FOUND',
-          available: false,
-        };
-      }
-
-      // Check practitioner conflict
+      const { doctor, office } = availability;
       const adminId = new Types.ObjectId(input.adminId);
-      const conflict = await this.appointmentRepository.findOne({
-        adminId,
-        isDeleted: false,
-        start: { $lt: endDate },
-        end: { $gt: startDate },
-      });
-      if (conflict) {
-        return {
-          status: 409,
-          message: 'PRACTITIONER_NOT_AVAILABLE',
-          available: false,
-        };
-      }
 
       const email = input.email.trim().toLowerCase();
       const phone = input.phone.trim();
@@ -256,7 +217,7 @@ export class AppointmentRequestService {
       const consultationTypeLabel =
         this.consultationTypeLabel(consultationType);
 
-      const request = await this.requestRepository.create({
+      await this.requestRepository.create({
         adminId,
         officeId: office._id,
         firstName: input.firstName.trim(),
@@ -276,17 +237,19 @@ export class AppointmentRequestService {
 
       const doctorName = doctorDisplayName(doctor.firstName, doctor.lastName);
       const patientName = `${input.firstName.trim()} ${input.lastName.trim()}`;
-      const startFormatted = this.formatAppointmentDate(startDate);
-      const reference = request._id.toString();
+      const startFormatted = this.formatAppointmentDate(
+        startDate,
+        office.timezone,
+      );
       const locationContext = this.buildRequestLocationContext(
         consultationType,
         office,
         phone,
       );
-      const calendarUrl =
+      const requestsUrl =
         buildFrontendUrl(
           this.configService.get<string>('FRONTEND_URL'),
-          '/dashboard/calendar',
+          '/dashboard/appointment-requests/list',
         ) || '';
 
       if (doctor.email) {
@@ -301,12 +264,11 @@ export class AppointmentRequestService {
             patientEmail: email,
             patientPhone: phone,
             startFormatted,
-            reference,
             consultationTypeLabel,
             locationPhrase: locationContext.locationPhrase,
             address: locationContext.address,
             phone: locationContext.phone,
-            calendarUrl,
+            requestsUrl,
           },
         );
       }
@@ -321,7 +283,6 @@ export class AppointmentRequestService {
           practitionerName: doctorName,
           otherPartyName: doctorName,
           startFormatted,
-          reference,
           consultationTypeLabel,
           locationPhrase: locationContext.locationPhrase,
           address: locationContext.address,

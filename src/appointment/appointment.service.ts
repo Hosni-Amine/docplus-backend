@@ -4,10 +4,9 @@ import { Types } from 'mongoose';
 import {
   buildFrontendUrl,
   EConsultationType,
-  EOfficeStaffRole,
   ERole,
-  EUserStatus,
   doctorDisplayName,
+  formatZonedDateTime,
 } from '../common';
 import { IBaseRes } from '../common/responses.dto';
 import { MailingService } from '../mailing/mailing.service';
@@ -19,6 +18,7 @@ import { UpdateAppointmentInput } from './dto/update-appointment.input';
 import { Appointment } from './entities/appointment.entity';
 import { AppointmentInviteService } from './appointment-invite.service';
 import { AppointmentRepository } from './appointment.repository';
+import { AppointmentAvailabilityService } from './appointment-availability.service';
 
 type Actor = {
   id?: string;
@@ -40,6 +40,7 @@ export class AppointmentService {
 
   constructor(
     private readonly appointmentRepository: AppointmentRepository,
+    private readonly appointmentAvailabilityService: AppointmentAvailabilityService,
     private readonly userRepository: UserRepository,
     private readonly officeRepository: OfficeRepository,
     private readonly inviteService: AppointmentInviteService,
@@ -68,28 +69,17 @@ export class AppointmentService {
       const startDate = new Date(input.start);
       const endDate = new Date(input.end);
 
-      const practitionerError = await this.validatePractitionerDoctor(
-        input.adminId,
+      const availability = await this.appointmentAvailabilityService.checkSlot({
+        adminId: input.adminId,
         officeId,
-      );
-      if (practitionerError) {
+        start: startDate,
+        end: endDate,
+        allDay: input.allDay ?? false,
+      });
+      if (!availability.available) {
         return {
-          status: 400,
-          message: practitionerError,
-          appointment: null,
-        };
-      }
-
-      // Check practitioner (admin) availability
-      const hasAdminConflict = await this.hasPractitionerConflict(
-        input.adminId,
-        startDate,
-        endDate,
-      );
-      if (hasAdminConflict) {
-        return {
-          status: 400,
-          message: 'PRACTITIONER_NOT_AVAILABLE',
+          status: availability.status,
+          message: availability.message,
           appointment: null,
         };
       }
@@ -255,29 +245,25 @@ export class AppointmentService {
 
       // Check practitioner (admin) availability
       const targetAdminId = input.adminId ?? existing.adminId?.toString();
-      if (targetAdminId) {
-        const practitionerError = await this.validatePractitionerDoctor(
-          targetAdminId,
-          existing.officeId.toString(),
-        );
-        if (practitionerError) {
+      const scheduleChanged =
+        targetAdminId !== existing.adminId?.toString() ||
+        startDate.getTime() !== new Date(existing.start).getTime() ||
+        endDate.getTime() !== new Date(existing.end).getTime() ||
+        (input.allDay ?? existing.allDay) !== existing.allDay;
+      if (targetAdminId && scheduleChanged) {
+        const availability =
+          await this.appointmentAvailabilityService.checkSlot({
+            adminId: targetAdminId,
+            officeId: existing.officeId.toString(),
+            start: startDate,
+            end: endDate,
+            allDay: input.allDay ?? existing.allDay,
+            excludeAppointmentId: input.id,
+          });
+        if (!availability.available) {
           return {
-            status: 400,
-            message: practitionerError,
-            appointment: null,
-          };
-        }
-
-        const hasAdminConflict = await this.hasPractitionerConflict(
-          targetAdminId,
-          startDate,
-          endDate,
-          input.id,
-        );
-        if (hasAdminConflict) {
-          return {
-            status: 400,
-            message: 'PRACTITIONER_NOT_AVAILABLE',
+            status: availability.status,
+            message: availability.message,
             appointment: null,
           };
         }
@@ -426,7 +412,15 @@ export class AppointmentService {
     detailsUpdated = false,
   ): Promise<void> {
     try {
-      const startFormatted = this.formatAppointmentDate(appointment.start);
+      const office = appointment.officeId
+        ? await this.officeRepository
+            .findOne({ _id: appointment.officeId })
+            .catch(() => null)
+        : null;
+      const startFormatted = this.formatAppointmentDate(
+        appointment.start,
+        office?.timezone,
+      );
       const practitionerName = doctorDisplayName(
         practitioner.firstName,
         practitioner.lastName,
@@ -446,9 +440,6 @@ export class AppointmentService {
       switch (appointment.consultationType) {
         case EConsultationType.IN_OFFICE: {
           consultationTypeLabel = 'In office consultation';
-          const office = await this.officeRepository.findOne({
-            _id: appointment.officeId,
-          });
           if (office) {
             const parts = [
               office.address,
@@ -477,9 +468,6 @@ export class AppointmentService {
         }
         case EConsultationType.PHONE: {
           consultationTypeLabel = 'Phone consultation';
-          const office = await this.officeRepository.findOne({
-            _id: appointment.officeId,
-          });
           const rawPhone =
             attendee.phone?.trim() ||
             practitioner.phone?.trim() ||
@@ -559,19 +547,11 @@ export class AppointmentService {
     }
   }
 
-  /** Human-readable appointment date for emails (Day before Month in English). */
-  private formatAppointmentDate(date: Date): string {
-    const timeZone =
+  /** Human-readable appointment date for emails, including its office timezone. */
+  private formatAppointmentDate(date: Date, officeTimezone?: string): string {
+    const fallbackTimezone =
       this.configService.get<string>('APP_TIMEZONE') || 'Europe/Paris';
-    try {
-      return new Intl.DateTimeFormat('en-GB', {
-        dateStyle: 'full',
-        timeStyle: 'short',
-        timeZone,
-      }).format(new Date(date));
-    } catch {
-      return new Date(date).toISOString();
-    }
+    return formatZonedDateTime(date, officeTimezone, fallbackTimezone);
   }
 
   private getDateError(
@@ -587,42 +567,6 @@ export class AppointmentService {
       return 'END_BEFORE_START';
     }
     return null;
-  }
-
-  /** Appointments must be assigned to an active doctor in the same office. */
-  private async validatePractitionerDoctor(
-    adminId: string,
-    officeId: string,
-  ): Promise<string | null> {
-    const practitioner = await this.userRepository.findOne({
-      _id: adminId,
-      role: ERole.ADMIN,
-      officeId: new Types.ObjectId(officeId),
-      officeStaffRole: EOfficeStaffRole.DOCTOR,
-      status: EUserStatus.ACTIVE,
-    });
-    if (!practitioner) {
-      return 'PRACTITIONER_MUST_BE_DOCTOR';
-    }
-    return null;
-  }
-
-  private async hasPractitionerConflict(
-    adminId: string,
-    start: Date,
-    end: Date,
-    exceptAppointmentId?: string,
-  ): Promise<boolean> {
-    const existingAppointments = await this.appointmentRepository.find({
-      adminId: new Types.ObjectId(adminId),
-      isDeleted: false,
-      start: { $lt: end },
-      end: { $gt: start },
-      ...(exceptAppointmentId
-        ? { _id: { $ne: new Types.ObjectId(exceptAppointmentId) } }
-        : {}),
-    });
-    return existingAppointments.length > 0;
   }
 
   private async hasUserConflict(

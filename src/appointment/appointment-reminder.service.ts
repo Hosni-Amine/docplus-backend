@@ -9,6 +9,7 @@ import {
   wallTimeToUtc,
   zonedDayRange,
   doctorDisplayName,
+  formatZonedDateTime,
 } from '../common';
 import { MailingService } from '../mailing/mailing.service';
 import { OfficeRepository } from '../office/office.repository';
@@ -194,14 +195,6 @@ export class AppointmentReminderService {
   }
 
   private formatStart(date: Date, timeZone: string): string {
-    try {
-      return new Intl.DateTimeFormat('en-GB', {
-        dateStyle: 'full',
-        timeStyle: 'short',
-        timeZone,
-      }).format(new Date(date));
-    } catch {
-      return new Date(date).toISOString();
-    }
+    return formatZonedDateTime(date, timeZone);
   }
 }
