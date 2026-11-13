@@ -107,6 +107,38 @@ export enum ECareRecipientLabel {
   CLIENT = 'client',
 }
 
+/** Payment methods an office can accept. */
+export enum EOfficePaymentMethod {
+  CASH = 'cash',
+  CARD = 'card',
+  BANK_TRANSFER = 'bank_transfer',
+  ONLINE_PAYMENT = 'online_payment',
+  MOBILE_PAYMENT = 'mobile_payment',
+  CHEQUE = 'cheque',
+}
+
+/** Accessibility facilities and accommodations an office provides. */
+export enum EOfficeAccessibility {
+  STEP_FREE_ACCESS = 'step_free_access',
+  WHEELCHAIR_ACCESSIBLE = 'wheelchair_accessible',
+  ACCESSIBLE_ENTRANCE = 'accessible_entrance',
+  ELEVATOR = 'elevator',
+  ESCALATOR = 'escalator',
+  WIDE_DOORWAYS = 'wide_doorways',
+  ACCESSIBLE_TOILET = 'accessible_toilet',
+  ACCESSIBLE_PARKING = 'accessible_parking',
+  ON_SITE_PARKING = 'on_site_parking',
+  PUBLIC_TRANSPORT_NEARBY = 'public_transport_nearby',
+  HEARING_LOOP = 'hearing_loop',
+  SIGN_LANGUAGE_SUPPORT = 'sign_language_support',
+  VISUAL_IMPAIRMENT_SUPPORT = 'visual_impairment_support',
+  ASSISTANCE_ANIMALS_WELCOME = 'assistance_animals_welcome',
+  PETS_WELCOME = 'pets_welcome',
+  LOW_SENSORY_ENVIRONMENT = 'low_sensory_environment',
+  ACCESSIBLE_EXAM_TABLE = 'accessible_exam_table',
+  ACCESSIBLE_WAITING_ROOM = 'accessible_waiting_room',
+}
+
 /** Medical office / facility / department type. */
 export enum EOfficeService {
   HOSPITAL = 'hospital',

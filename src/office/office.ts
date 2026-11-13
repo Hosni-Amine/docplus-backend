@@ -1,3 +1,4 @@
+import type { EOfficeAccessibility, EOfficePaymentMethod } from '../common';
 import { OfficeService } from './office.service';
 import type { User } from '../user/entities/user.entity';
 
@@ -95,6 +96,11 @@ export type Office = {
   status?: OfficeStatus;
   careRecipientLabel?: CareRecipientLabel;
   workingHours?: WorkingHours | null;
+  legalDetails?: Record<string, string>;
+  paymentMethods?: EOfficePaymentMethod[];
+  fees?: Record<string, string>;
+  refunds?: Record<string, string>;
+  accessibility?: EOfficeAccessibility[];
   officeAdmins?: User[];
   officeUsers?: User[];
   owner?: User | null;

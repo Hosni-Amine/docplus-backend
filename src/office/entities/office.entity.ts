@@ -2,6 +2,8 @@ import {
   AbstractDocument,
   ECareRecipientLabel,
   EOfficeService,
+  EOfficeAccessibility,
+  EOfficePaymentMethod,
   EOfficeStatus,
   ERole,
   EUserStatus,
@@ -22,6 +24,26 @@ export class Office extends AbstractDocument {
   /** Medical office / facility / department type. */
   @Prop({ enum: EOfficeService, type: String })
   service?: EOfficeService;
+
+  /** Office-defined legal identifiers stored as label/value pairs. */
+  @Prop({ type: Object, default: undefined })
+  legalDetails?: Record<string, string>;
+
+  /** Selected office payment methods. */
+  @Prop({ type: [String], enum: EOfficePaymentMethod, default: undefined })
+  paymentMethods?: EOfficePaymentMethod[];
+
+  /** Office-defined fees stored as label/value pairs. */
+  @Prop({ type: Object, default: undefined })
+  fees?: Record<string, string>;
+
+  /** Office-defined refunds stored as label/value pairs. */
+  @Prop({ type: Object, default: undefined })
+  refunds?: Record<string, string>;
+
+  /** Selected accessibility options. */
+  @Prop({ type: [String], enum: EOfficeAccessibility, default: undefined })
+  accessibility?: EOfficeAccessibility[];
 
   @Prop()
   phone?: string;
