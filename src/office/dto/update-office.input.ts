@@ -3,11 +3,9 @@ import {
   IsArray,
   IsEnum,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
-  Validate,
-  ValidatorConstraint,
-  type ValidatorConstraintInterface,
 } from 'class-validator';
 import {
   EOfficeAccessibility,
@@ -15,22 +13,6 @@ import {
   EOfficeStatus,
 } from '../../common';
 import { CreateOfficeInput } from './create-office.input';
-
-@ValidatorConstraint({ name: 'stringRecordValues', async: false })
-class StringRecordValuesConstraint implements ValidatorConstraintInterface {
-  validate(value: unknown): boolean {
-    return (
-      typeof value === 'object' &&
-      value !== null &&
-      !Array.isArray(value) &&
-      Object.values(value).every((entry) => typeof entry === 'string')
-    );
-  }
-
-  defaultMessage(): string {
-    return 'Every value must be a string';
-  }
-}
 
 export class UpdateOfficeInput extends PartialType(CreateOfficeInput) {
   @IsString()
@@ -42,7 +24,7 @@ export class UpdateOfficeInput extends PartialType(CreateOfficeInput) {
   status?: EOfficeStatus;
 
   @IsOptional()
-  @Validate(StringRecordValuesConstraint)
+  @IsObject()
   legalDetails?: Record<string, string>;
 
   @IsOptional()
@@ -51,12 +33,17 @@ export class UpdateOfficeInput extends PartialType(CreateOfficeInput) {
   paymentMethods?: EOfficePaymentMethod[];
 
   @IsOptional()
-  @Validate(StringRecordValuesConstraint)
+  @IsObject()
   fees?: Record<string, string>;
 
   @IsOptional()
   @IsString()
-  refunds?: Record<string, string>;
+  currency?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  refundMethods?: string[];
 
   @IsOptional()
   @IsArray()

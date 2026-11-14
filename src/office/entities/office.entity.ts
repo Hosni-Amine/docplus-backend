@@ -25,7 +25,6 @@ export class Office extends AbstractDocument {
   @Prop({ enum: EOfficeService, type: String })
   service?: EOfficeService;
 
-  /** Office-defined legal identifiers stored as label/value pairs. */
   @Prop({ type: Object, default: undefined })
   legalDetails?: Record<string, string>;
 
@@ -33,13 +32,14 @@ export class Office extends AbstractDocument {
   @Prop({ type: [String], enum: EOfficePaymentMethod, default: undefined })
   paymentMethods?: EOfficePaymentMethod[];
 
-  /** Office-defined fees stored as label/value pairs. */
   @Prop({ type: Object, default: undefined })
   fees?: Record<string, string>;
 
-  /** Office-defined refunds stored as label/value pairs. */
-  @Prop({ type: Object, default: undefined })
-  refunds?: Record<string, string>;
+  @Prop({ type: [String], default: undefined })
+  refundMethods?: string[];
+
+  @Prop()
+  currency?: string;
 
   /** Selected accessibility options. */
   @Prop({ type: [String], enum: EOfficeAccessibility, default: undefined })
